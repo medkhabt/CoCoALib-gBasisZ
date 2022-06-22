@@ -18,6 +18,16 @@ const string LongDescription =
   "  make foo                                                         \n";
 //----------------------------------------------------------------------
 // i need more examples for bigger polynomials, or for polynomials that will give a result of non one.
+
+class NoElementFoundException: public exception {
+    const string m_msg;
+    public:
+    NoElementFoundException(const string& msg): m_msg(msg) {
+//        cout << "NoElementFoundException::NoElementFoundException - set m_msg to: " << m_msg << endl;
+    }
+    
+    
+};
 namespace CoCoA
 {
     
@@ -53,6 +63,68 @@ namespace CoCoA
 //
 //
 //    }
+    
+    
+    // Implement NF
+    // First we need to check if it a global monomial order or a local monomial order.
+    // create existTopReduction function.
+    // create topReduction function.
+    
+// TODO change the implementation of this.
+    ConstRefPPMonoidElem LM(ConstRefRingElem e){
+        return LPP(e);
+    }
+    
+    //TODO: implement also the check of lc(f) = a * lc(g) + b, with a <> 0 and b < lc(f) but how do we choose the a, we have some flexibilty
+    // here but what is the optimal solution ?
+    // for now i ll set b to be 0, but i will need to implement something that will start with setting value to b and trying to find the
+    // first (a,b) solution of the equation, this is the naive solution for now.
+    
+    void getElementTopReduction(RingElem& result, BigInt& aFactor,  ConstRefRingElem& h, const std::vector<RingElem>& generators){
+//        cout << "Start of the getElementTopReduction functon" << endl;
+//        cout << "LM(h) is : " << LM(h) << endl;
+        for(auto &gen : generators) {
+//            cout << "LM(gen) is : " << LM(gen) << endl;
+//            cout << "isDivisible : " << IsDivisible(LM(h), LM(gen));
+            BigInt LCofH = ConvertTo<BigInt>(LC(h));
+            BigInt LCofGen = ConvertTo<BigInt>(LC(gen));
+            if(IsDivisible(LM(h), LM(gen)) && IsZero(LCofH % LCofGen) && !IsZero( LCofH / LCofGen ) ) {
+                result = gen;
+                aFactor = LCofH / LCofGen;
+                return ;
+            }
+        }
+        throw(NoElementFoundException("Can't find any element that top reduces the given polynomial"));
+    }
+    
+    //Doesn't check if g can top reduces h, there is the getElementTopReduction that use this, this should stay an inner function to the class/file.
+    RingElem topReduction(const BigInt& aCoef,ConstRefRingElem h, ConstRefRingElem g) {
+        // create a monomial which has the lmh/lmg and lc which is a and than multiply it by g and add it to h ;
+        RingElem aAndLmQuotient = monomial(owner(h), aCoef, LM(h)/LM(g));
+        return h - aAndLmQuotient * g;
+    }
+    RingElem NF(RingElem f, const std::vector<RingElem>& generators) {
+        RingElem h = f; // is this copy by ref or value ?
+        
+        // maybe it is better to copy the generators, so i can remove some of the generators that are not top reduction element, and
+        // let filter the vector in every loop .
+        try{
+            while(!IsZero(h) /*&& getElementTopReduction(h, generators)*/) {
+              // instead of creating a new function that just test if there is an element that is a top reduction for h in gen. which do
+              // the same thing as getElementTopReduction, we can throw an error in the function and catch it here to terminate the while loop.
+                BigInt a;
+                RingElem g;
+                getElementTopReduction(g, a, h, generators);
+                h = topReduction(a, h, g);
+            }
+        } catch(const NoElementFoundException e) {
+//            cout << "finish the loop" << endl;
+            return h;
+        }
+        
+        
+        return h;
+    }
     
     bool isNecessaryGcdPair(ConstRefRingElem a, ConstRefRingElem b){
         return ( !(IsDivisible(LC(a), LC(b))) && !(IsDivisible(LC(b), LC(a))) );
@@ -124,9 +196,7 @@ namespace CoCoA
         //return ((D[1]*TermLcm)/LT(F))*F+((D[2]*TermLcm)/LT(G))*G
     }
     
-    RingElem LM(ConstRefRingElem e){
-        return monomial(owner(e), LC(e), LPP(e));
-    }
+    
     //TODO: change the bool argument to a flag.
     //TODO: should ret a record instead of RingElem (maybe genetic in this case)
     Record* nRoverZZCORE(RingElem poly, const std::vector<RingElem>& generators, bool withQuotients){
@@ -376,7 +446,25 @@ namespace CoCoA
           cout << ele << endl;
       }
 
+      std::vector<RingElem> gens ;
+      gens.push_back(RingElem(P, "8*x^2 -5*x -7"));
+      gens.push_back(RingElem(P, "9*x^6 -9*x*y +2*x -6*y +3"));
+      gens.push_back(RingElem(P, "6*x*y +y^2 +7*x +7*y +8"));
       
+      
+      RingElem h = RingElem(P, "16 *x^3 - 3*x + 7");
+      
+      
+      cout << "Test the function getElementTopReduction" << endl ;
+//      ConstRefRingElem getElementTopReduction(ConstRefRingElem h, const std::vector<ConstRefRingElem>& generators){
+      RingElem result10;
+      BigInt a;
+      getElementTopReduction(result10, a, h, gens);
+      cout<< "Result is : " << result10 << " and a is  " << a << endl;
+      
+      cout << "the top reduction is : " << topReduction(a, h, result10) << endl;
+      
+      cout << "the nf of h in the gens vector is " << NF(h, gens) << endl;
       
       
       cout << ShortDescription << endl;
