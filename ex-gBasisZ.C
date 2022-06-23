@@ -3,6 +3,8 @@
 // You are free to use any part of this example in your own programs.
 
 #include "CoCoA/library.H"
+#include <chrono> // TODO: remove it afterward.
+#include <thread> // TODO: remove it afterward.
 
 using namespace std;
 
@@ -75,11 +77,15 @@ namespace CoCoA
         return LPP(e);
     }
     
+    void getFactorAForTopReduction(BigInt& a, const BigInt& size) {
+        
+    }
+    
     //TODO: implement also the check of lc(f) = a * lc(g) + b, with a <> 0 and b < lc(f) but how do we choose the a, we have some flexibilty
     // here but what is the optimal solution ?
     // for now i ll set b to be 0, but i will need to implement something that will start with setting value to b and trying to find the
     // first (a,b) solution of the equation, this is the naive solution for now.
-    
+    // existelementtopredu();
     void getElementTopReduction(RingElem& result, BigInt& aFactor,  ConstRefRingElem& h, const std::vector<RingElem>& generators){
 //        cout << "Start of the getElementTopReduction functon" << endl;
 //        cout << "LM(h) is : " << LM(h) << endl;
@@ -88,10 +94,13 @@ namespace CoCoA
 //            cout << "isDivisible : " << IsDivisible(LM(h), LM(gen));
             BigInt LCofH = ConvertTo<BigInt>(LC(h));
             BigInt LCofGen = ConvertTo<BigInt>(LC(gen));
-            if(IsDivisible(LM(h), LM(gen)) && IsZero(LCofH % LCofGen) && !IsZero( LCofH / LCofGen ) ) {
-                result = gen;
-                aFactor = LCofH / LCofGen;
-                return ;
+            if(IsDivisible(LM(h), LM(gen)) && !IsZero( LCofH / LCofGen ) ) {
+                BigInt b = LCofH % LCofGen;
+                if(b < LCofH) {
+                    result = gen;
+                    aFactor = LCofH / LCofGen;
+                    return ;
+                }
             }
         }
         throw(NoElementFoundException("Can't find any element that top reduces the given polynomial"));
@@ -109,12 +118,14 @@ namespace CoCoA
         // maybe it is better to copy the generators, so i can remove some of the generators that are not top reduction element, and
         // let filter the vector in every loop .
         try{
-            while(!IsZero(h) /*&& getElementTopReduction(h, generators)*/) {
+            while(!IsZero(h) /*&& !existElementTopReduction(h, generators)*/) {
               // instead of creating a new function that just test if there is an element that is a top reduction for h in gen. which do
               // the same thing as getElementTopReduction, we can throw an error in the function and catch it here to terminate the while loop.
+            // Suggestion : check a if it is zero that means no elem was top reduced
                 BigInt a;
                 RingElem g;
                 getElementTopReduction(g, a, h, generators);
+//                cout << "NF: LC h before reduction: " << LC(h) << endl ;
                 h = topReduction(a, h, g);
             }
         } catch(const NoElementFoundException e) {
@@ -122,22 +133,40 @@ namespace CoCoA
             return h;
         }
         
-        
+        // is there any case that i need this return ?
         return h;
     }
+    
     
     bool isNecessaryGcdPair(ConstRefRingElem a, ConstRefRingElem b){
         return ( !(IsDivisible(LC(a), LC(b))) && !(IsDivisible(LC(b), LC(a))) );
     }
     
     RingElem sPolynomial(ConstRefRingElem a, ConstRefRingElem b){
-        RingElem lmA = monomial(owner(a), LC(a), LPP(a));
-        RingElem lmB = monomial(owner(b), LC(b), LPP(b));
 
-        RingElem numerator =
-                    lcm(lmA, lmB);
-        return (numerator/lmA) * a - (numerator/lmB) * b;
+        ConstRefPPMonoidElem lmA = LM(a);
+        ConstRefPPMonoidElem lmB = LM(b);
+        
+        PPMonoidElem termLcm = lcm(lmA, lmB);
+        
+        
+        BigInt lcaValue =  ConvertTo<BigInt>(LC(a));
+        BigInt lcbValue = ConvertTo<BigInt>(LC(b));
+        
+        
+        BigInt numerator = lcm(lcaValue, lcbValue);
+        // af tf f - ag tg g //
+        return monomial(owner(a), (numerator/lcbValue), (termLcm/lmA)) * a - monomial(owner(b), (numerator/lcaValue), (termLcm/lmB)) * b;
 
+    }
+    
+    
+    bool isGcdPolyUseless(ConstRefRingElem f,ConstRefRingElem g) {
+        return (IsDivisible(LC(g), LC(f)));
+    }
+    
+    bool isSPolyUseless(ConstRefRingElem f, ConstRefRingElem g){
+        return (IsCoprime(LM(f), LM(g)) && IsCoprime(LC(f), LC(g)));
     }
     
     
@@ -159,17 +188,20 @@ namespace CoCoA
         return LPP(a);
     }
     
+    
+    
     RingElem gcdPolynomial(ConstRefRingElem a, ConstRefRingElem b){
-        ConstRefPPMonoidElem lta = LT(a);
-        ConstRefPPMonoidElem ltb = LT(b);
+        // bf tf f + bg tg g // tf = t/ lmf tg = t/lmg // b = gcd lcf, lcg // gf
+        ConstRefPPMonoidElem lma = LM(a);
+        ConstRefPPMonoidElem lmb = LM(b);
         
-        PPMonoidElem termLcm = lcm(lta, ltb);
+        PPMonoidElem termLcm = lcm(lma, lmb);
         BigInt lcaValue =  ConvertTo<BigInt>(LC(a));
         BigInt lcbValue = ConvertTo<BigInt>(LC(b));
         
 //        cout << "lcaValue " << lcaValue << ", lcbValue " << lcbValue << endl;
         GcdAndCofacs resultExt = ExtGcd(
-                std::vector<BigInt>{lcaValue, lcbValue}); //GcdAndCofacs
+                std::vector<BigInt>{lcaValue, lcbValue}); //GcdAndCofacs  this bf , bg ?
         
 //        cout << "cofacs are : " << resultExt.myCofacs.at(0) << ", " << resultExt.myCofacs.at(1) << endl;
         
@@ -185,14 +217,14 @@ namespace CoCoA
         
 //        RingElem result(owner(a), )
         //TODO:  in case one of the result have lpp equal to one.
-        RingElem aPart = monomial(owner(a), resultExt.myCofacs.at(0), termLcm/lta);
+        RingElem aPart = monomial(owner(a), resultExt.myCofacs.at(0), termLcm/lma);
 //        cout << "aPart is one:" << IsOne(LPP(aPart)) << endl;
 //        cout << "aPart lc " << LC(aPart) << " aPart LPP" << LPP(aPart) << endl;
-        RingElem bPart = monomial(owner(b), resultExt.myCofacs.at(1), termLcm/ltb);
+        RingElem bPart = monomial(owner(b), resultExt.myCofacs.at(1), termLcm/lmb);
 //        cout << "bPart is one:" << IsOne(bPart) << endl;
 //        cout << "bPart lc " << LC(bPart) << " bPart LPP" << LPP(bPart) << endl;
 //        cout << "the sum is zero" << IsZero(aPart + bPart) << endl;
-        return (aPart + bPart); //
+        return (aPart * a + bPart * b); //
         //return ((D[1]*TermLcm)/LT(F))*F+((D[2]*TermLcm)/LT(G))*G
     }
     
@@ -260,6 +292,90 @@ namespace CoCoA
         }
     }
     
+    // Buchberger's Algoa
+    std::vector<RingElem> gBasisCoreV2( std::vector<RingElem>& generators) {
+        cout<< "gBasisCoreV2: inside gBasisCoreV2" << endl;
+        const long length = generators.size();
+         std::vector<RingElem> polynomials;
+        
+        // 2
+        
+        cout << "gBasisCoreV2: starting the first loop "<< endl;
+        // should i sort the polynomials list to prioritirize the gcds first before aplyaing spolynomial [Comment after theoreme 17]
+        for (unsigned long i = 0; i < length - 1; i++) {
+            for (unsigned long j = i + 1; j < length; j++) {
+                // first we need to see if we can discard one.
+                const RingElem fi = generators.at(i), fj = generators.at(j);
+                
+                if(!isGcdPolyUseless(fi, fj)) {
+                        polynomials.push_back(gcdPolynomial(fi, fj));
+                        cout << "we got a gcd poly : "  << endl;
+                    
+                    
+                }
+                if(!isSPolyUseless(fi, fj)) {
+                        polynomials.push_back(sPolynomial(fi, fj));
+                        cout << "we got a spoly: " <<endl;
+                }
+            }
+        }
+        
+        cout << "gBasisCoreV2: starting the while loop" << endl;
+        cout << "gBasisCoreV2: size of generators is  " << generators.size() << endl;
+        // 3
+            
+        while(!polynomials.empty()) {
+            cout<<"polynomial size " << polynomials.size() << endl;
+            // 4
+            std::this_thread::sleep_for(std::chrono::seconds(5));
+            cout << "************************" << endl;
+            RingElem h = polynomials.back();
+            polynomials.pop_back();  // p<- p \ {h}  TODO: check the list is not empty, behaviour unpredicted. or not because it will get checked
+            // by the while condition,
+            cout << "poly size is after pop back: "  << polynomials.size();
+            // 5
+            h = NF(h, generators);
+            cout << "result of NF: " << h << endl ;
+            // 6
+            if(!IsZero(h)) {
+                cout<< " inside the condition is not zero" << endl;
+//                cout<< " polynom size before the new fill " << polynomials.size() <<endl;
+                polynomials.clear();
+//                cout << "polynom size after the clear" << polynomials.size() << endl ;
+                for(auto &g : generators) {
+                    if(!isGcdPolyUseless(h, g)) {
+                        cout << "is gdc poly not usless = " << gcdPolynomial(g, h) << endl;
+                        polynomials.push_back(gcdPolynomial(g, h));
+
+                    }
+                    if(!isSPolyUseless(h, g)) {
+                        cout << "is spoly not useless = " << sPolynomial(g, h) << endl;
+                        polynomials.push_back(sPolynomial(g, h));
+                    }
+                }
+                
+
+                generators.push_back(h);
+                std::sort(generators.begin(), generators.end(), [](auto gen1, auto gen2) {
+                    return abs(ConvertTo<BigInt>(LC(gen1))) > abs(ConvertTo<BigInt>(LC(gen2)));
+                });
+                
+                cout << "polyn size after being inside the condition after the fill in : " << polynomials.size() << endl;
+
+                // check if the generators list is already having a strong standard represntation.
+
+            }
+            
+//            std::this_thread::sleep_for(std::chrono::seconds(5));
+        }
+        cout << "gBasisCoreV2: end of the while loop" << endl;
+    // do the loop
+        // calculate NF
+        // if we found a reduction (h is diff than 0) then
+            // create a new list of p with spoly, gpoly of the new h and the element of the g.
+            // and add h to the g elements .
+        return generators;
+    }
     std::vector<RingElem> gBasisCore(const std::vector<RingElem>& generators) {
         unsigned long length = generators.size() ;
         std::vector<std::pair<unsigned long, unsigned long>> pairList;
@@ -336,6 +452,13 @@ namespace CoCoA
     //maybe use the same vector so we won't need to copy the list, and also we need to make sure that the list doesn't
     // get partially filled in case an exception happend.
     
+    std::vector<RingElem> gBoverZZV2(std::vector<RingElem>& v) {
+        if(v.empty()){
+            throw std::invalid_argument("the list must not be null");
+        }
+        cout << "gBoverZZ: going to call gBasisCore(v)" << endl;
+        return gBasisCoreV2(v);
+    }
     std::vector<RingElem> gBoverZZ(const std::vector<RingElem>& v) {
         if(v.empty()){
             throw std::invalid_argument("the list must not be null");
@@ -420,52 +543,71 @@ namespace CoCoA
       cout << "finished creating the vector" << endl;
 
     
+ 
+      cout << gcdPolynomial(RingElem(P, "6 * x^2 + 1"), RingElem(P, "-4 * x^3 + 2")) << endl;
+      cout << sPolynomial(RingElem(P, "6 * x^2 + 1"), RingElem(P, "-4 * x^3 + 2")) << endl;
 
-    
-      
       const clock_t begin_time = clock();
       std:: vector<RingElem> result = gBoverZZ(v);
       std::cout << "tine spent on gBoverZZ is: " <<  float( clock () - begin_time ) /  CLOCKS_PER_SEC;
-    
-      
+
+
 
       cout << " the list after the basis thing: " << endl;
       for(RingElem& ele: result) {
           cout << ele << endl;
       }
-
-      
-      
-      
-      const clock_t begin_time1 = clock();
-      std:: vector<RingElem> resultminimum = minimalGBoverZZ(v);
-      std::cout << "tine spent on  minimal gBoverZZ is: " <<  float( clock () - begin_time1 ) /  CLOCKS_PER_SEC;
-
-      cout << " the list after the minimal gbasis thing: " << endl;
-      for(RingElem& ele: resultminimum) {
-          cout << ele << endl;
-      }
+//
+//
+//
+//
+//      const clock_t begin_time1 = clock();
+//      std:: vector<RingElem> resultminimum = minimalGBoverZZ(v);
+//      std::cout << "tine spent on  minimal gBoverZZ is: " <<  float( clock () - begin_time1 ) /  CLOCKS_PER_SEC;
+//
+//      cout << " the list after the minimal gbasis thing: " << endl;
+//      for(RingElem& ele: resultminimum) {
+//          cout << ele << endl;
+//      }
 
       std::vector<RingElem> gens ;
-      gens.push_back(RingElem(P, "8*x^2 -5*x -7"));
-      gens.push_back(RingElem(P, "9*x^6 -9*x*y +2*x -6*y +3"));
-      gens.push_back(RingElem(P, "6*x*y +y^2 +7*x +7*y +8"));
-      
-      
-      RingElem h = RingElem(P, "16 *x^3 - 3*x + 7");
-      
-      
-      cout << "Test the function getElementTopReduction" << endl ;
+      gens.push_back(RingElem(P, "x^2 + 3*x + 4"));
+      gens.push_back(RingElem(P, "x^4 - 6*x + 3")); //"x^4 -9*x*y+2*x -6*y +3"
+      gens.push_back(RingElem(P, "y^2 +7*x +7*y +8")); //6*x*y +y^2 +7*x +7*y +8
+
+
+      RingElem h = RingElem(P, "x^3");
+
+
+//      cout << "Test the function getElementTopReduction" << endl ;
 //      ConstRefRingElem getElementTopReduction(ConstRefRingElem h, const std::vector<ConstRefRingElem>& generators){
       RingElem result10;
       BigInt a;
-      getElementTopReduction(result10, a, h, gens);
-      cout<< "Result is : " << result10 << " and a is  " << a << endl;
-      
-      cout << "the top reduction is : " << topReduction(a, h, result10) << endl;
-      
-      cout << "the nf of h in the gens vector is " << NF(h, gens) << endl;
-      
+//      getElementTopReduction(result10, a, h, gens);
+//      cout<< "Result is : " << result10 << " and a is  " << a << endl;
+
+//      cout << "the top reduction is : " << topReduction(a, h, result10) << endl;
+
+//      cout << "the nf of h in the gens vector is " << NF(h, gens) << endl;
+
+
+      cout << "new gBoverZZ : " << endl;
+
+//      const clock_t begin_time2 = clock();
+//      std:: vector<RingElem> result2 = gBoverZZV2(v);
+//      std::cout << "tine spent on gBoverZZ is: " <<  float( clock () - begin_time2 ) /  CLOCKS_PER_SEC << endl;
+
+      std:: vector<RingElem> result3 = gBoverZZ(v);
+//      cout << " the list after the new implementation of gBoverZZV2  thing: " << endl;
+//      for(RingElem& ele: result2) {
+//          cout << ele << endl;
+//      }
+      cout << " the list after the old implementation of gBoverzz" << endl;
+      for(RingElem& ele: result3) {
+          cout << ele << endl;
+      }
+
+
       
       cout << ShortDescription << endl;
     cout << boolalpha; // so that bools print out as true/false
