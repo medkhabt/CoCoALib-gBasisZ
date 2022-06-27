@@ -35,13 +35,13 @@ namespace CoCoA
     
     //TODO:
     // better name, sugg: RemQuots.
-    class Record {
+    class RemQuots {
         private: // data members;
             RingElem remainder;
             std::vector<RingElem> quotients;
         public :
-            Record(ConstRefRingElem, const std::vector<RingElem>&);
-            explicit Record(ConstRefRingElem);
+            RemQuots(ConstRefRingElem, const std::vector<RingElem>&);
+            explicit RemQuots(ConstRefRingElem);
             const RingElem& getRemainder() const{
                 return this->remainder;
             }
@@ -54,9 +54,9 @@ namespace CoCoA
     // call a constructor to the other construcotr.
     // we explicitly allow an empty vector. maybe not do that in thefuture
     // we should check that all the elements in the vector should be in the same ring of r.
-    Record::Record(ConstRefRingElem r, const std::vector<RingElem>& q) : remainder(r), quotients(q){}
+    RemQuots::RemQuots(ConstRefRingElem r, const std::vector<RingElem>& q) : remainder(r), quotients(q){}
 
-    Record::Record(ConstRefRingElem r) :remainder(r){}
+    RemQuots::RemQuots(ConstRefRingElem r) :remainder(r){}
 
 //  // no need to implement the isPid because it already exist in the ring file.
 //    vector<RingElem> cleanListGENS(vector L) {
@@ -280,16 +280,16 @@ namespace CoCoA
     // pass by ref poly.
     // raw pointer..
     // check if generators contains  zero poly.
-    Record nRoverZZCORE(RingElem poly, const std::vector<RingElem>& generators, bool withQuotients){
+    RemQuots nRoverZZCORE(RingElem poly, const std::vector<RingElem>& generators, bool withQuotients){
         std::vector<RingElem> quotients(generators.size());
 //        cout << "nRoverZZCore: first breakpoint" << endl;
         if(IsZero(poly)) {
             if(withQuotients){
                 // get rid of new(s) so you can remove the
-                return  Record(zero(owner(poly)), quotients);
+                return  RemQuots(zero(owner(poly)), quotients);
             }
             else {
-                return  Record(zero(owner(poly)));
+                return  RemQuots(zero(owner(poly)));
             }
         }
 //        cout << "nRoverZZCore: second breakpoint" << endl;
@@ -321,10 +321,10 @@ namespace CoCoA
 //                                   cout << "nRoverZZCore: seven breakpoint: " << endl;
                     if(IsZero(reminderElem)) {
                         if(withQuotients) {
-                            return  Record(zero(owner(poly)), quotients);
+                            return  RemQuots(zero(owner(poly)), quotients);
                         }
                         else {
-                            return  Record(reminderElem); // (same as putting zero)
+                            return  RemQuots(reminderElem); // (same as putting zero)
                         }
                     }
                     found = true; // i don't think this part of the code will get executed.
@@ -335,10 +335,10 @@ namespace CoCoA
         
         
         if(withQuotients) {
-            return  Record(reminderElem, quotients);
+            return  RemQuots(reminderElem, quotients);
         }
         else {
-            return  Record(reminderElem); // this repeats a lot of times , let's create a function for this functionality.
+            return  RemQuots(reminderElem); // this repeats a lot of times , let's create a function for this functionality.
         }
     }
     
