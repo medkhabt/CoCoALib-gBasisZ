@@ -104,36 +104,59 @@ namespace CoCoA
         throw(NoElementFoundException("Can't find any element that top reduces the given polynomial"));
     }
     
+
     //Doesn't check if g can top reduces h, there is the getElementTopReduction that use this, this should stay an inner function to the class/file.
     RingElem topReduction(const BigInt& aCoef,ConstRefRingElem h, ConstRefRingElem g) {
         // create a monomial which has the lmh/lmg and lc which is a and than multiply it by g and add it to h ;
         RingElem aAndLmQuotient = monomial(owner(h), aCoef, LM(h)/LM(g));
         return h - aAndLmQuotient * g;
     }
-    //TODO : instead of the for loop to the find_if
-    RingElem NF(RingElem f, const std::vector<RingElem>& generators) {
-        RingElem h = f; // is this copy by ref or value ?
-        
+    
+    RingElem NF(const RingElem f, const std::vector<RingElem>& generators) {
+        RingElem h = f; // should i get rid of this copy? at least make f const
+        // TODO: test both cases where i just use the same vector, and when i copy the vector generators so i can filter it each time i try to look
+        // for a a reducer of h.
         // maybe it is better to copy the generators, so i can remove some of the generators that are not top reduction element, and
         // let filter the vector in every loop .
-        try{
-            while(!IsZero(h) /*&& !existElementTopReduction(h, generators)*/) {
+            while(!IsZero(h)) {
               // instead of creating a new function that just test if there is an element that is a top reduction for h in gen. which do
               // the same thing as getElementTopReduction, we can throw an error in the function and catch it here to terminate the while loop.
             // Suggestion : check a if it is zero that means no elem was top reduced
                 BigInt a;
                 RingElem g;
                 // return bool and check if it is true and break in case it is ..
-                getElementTopReduction(g, a, h, generators);
-//                cout << "NF: LC h before reduction: " << LC(h) << endl ;
+//                getElementTopReduction(g, a, h, generators);
+                
+                auto isElementTopReduces =
+                [&h, &a](ConstRefRingElem& element){
+                    BigInt LCofH = ConvertTo<BigInt>(LC(h));
+                    BigInt LCofElem = ConvertTo<BigInt>(LC(element));
+                    
+                    if(IsDivisible(LM(h), LM(element)) && !IsZero(LCofH / LCofElem)) {
+                        BigInt b = LCofH % LCofElem ;
+                        if( b < LCofH) {
+                            a = LCofH / LCofElem;
+                            return true;
+                        }
+                        else {
+                            return false;
+                        }
+                    }
+                    return false;
+                };
+//                cout << "NFL before find_if" << endl ;
+                auto result = std::find_if(begin(generators), end(generators), isElementTopReduces);
+//                cout << "NFL after find_if" << endl ;
+                
+                if(result != std::end(generators)) {
+                    g = *result;
+                }
+                else {
+                    break;
+                }
+//                cout << "NF:  h before reduction: " << h << endl ;
                 h = topReduction(a, h, g);
             }
-        } catch(const NoElementFoundException e) {
-//            cout << "finish the loop" << endl;
-            return h;
-        }
-        
-        // is there any case that i need this return ?
         return h;
     }
     
@@ -622,41 +645,41 @@ namespace CoCoA
 //      }
 
       std::vector<RingElem> gens ;
-      gens.push_back(RingElem(P, "x^2 "));
+      gens.push_back(RingElem(P, "x^2 + 1 "));
       gens.push_back(RingElem(P, "x^4 + 7")); //"x^4 -9*x*y+2*x -6*y +3"
 //      gens.push_back(RingElem(P, "x^2 +7*x +7*x^9 +8")); //6*x*y +y^2 +7*x +7*y +8
 
 
-//      RingElem h = RingElem(P, "x^3");
+      RingElem h = RingElem(P, "x^3");
 
 
 //      cout << "Test the function getElementTopReduction" << endl ;
 //      ConstRefRingElem getElementTopReduction(ConstRefRingElem h, const std::vector<ConstRefRingElem>& generators){
-//      RingElem result10;
-//      BigInt a;
+      RingElem result10;
+      BigInt a;
 //      getElementTopReduction(result10, a, h, gens);
 //      cout<< "Result is : " << result10 << " and a is  " << a << endl;
 
 //      cout << "the top reduction is : " << topReduction(a, h, result10) << endl;
 
-//      cout << "the nf of h in the gens vector is " << NF(h, gens) << endl;
+      cout << "the nf of h in the gens vector is " << NF(h, gens) << endl;
 
 
-      cout << "new gBoverZZ : " << endl;
-
-      const clock_t begin_time2 = clock();
-      std:: vector<RingElem> result2 = gBoverZZV2(v);
-      std::cout << "tine spent on gBoverZZ is: " <<  float( clock () - begin_time2 ) /  CLOCKS_PER_SEC << endl;
-
-      std:: vector<RingElem> result3 = gBoverZZ(v);
-          cout << " the list after the new implementation of gBoverZZV2  thing: " << endl;
-          for(RingElem& ele: result2) {
-              cout << ele << endl;
-          }
-      cout << " the list after the old implementation of gBoverzz" << endl;
-      for(RingElem& ele: result3) {
-          cout << ele << endl;
-      }
+//      cout << "new gBoverZZ : " << endl;
+//
+//      const clock_t begin_time2 = clock();
+//      std:: vector<RingElem> result2 = gBoverZZV2(v);
+//      std::cout << "tine spent on gBoverZZ is: " <<  float( clock () - begin_time2 ) /  CLOCKS_PER_SEC << endl;
+//
+//      std:: vector<RingElem> result3 = gBoverZZ(v);
+//          cout << " the list after the new implementation of gBoverZZV2  thing: " << endl;
+//          for(RingElem& ele: result2) {
+//              cout << ele << endl;
+//          }
+//      cout << " the list after the old implementation of gBoverzz" << endl;
+//      for(RingElem& ele: result3) {
+//          cout << ele << endl;
+//      }
 
 
       
