@@ -53,123 +53,43 @@ namespace CoCoA
     };
     // call a constructor to the other construcotr.
     // we explicitly allow an empty vector. maybe not do that in thefuture
-    // we should check that all the elements in the vector should be in the same ring of r.
+    // TODO: we should check that all the elements in the vector should be in the same ring of r.
     RemQuots::RemQuots(ConstRefRingElem r, const std::vector<RingElem>& q) : remainder(r), quotients(q){}
 
     RemQuots::RemQuots(ConstRefRingElem r) :remainder(r){}
-
-//  // no need to implement the isPid because it already exist in the ring file.
-//    vector<RingElem> cleanListGENS(vector L) {
-//
-//
-//    }
     
-    
-    // Implement NF
-    // First we need to check if it a global monomial order or a local monomial order.
-    // create existTopReduction function.
-     // create topReduction function.
-    
-// TODO change the implementation of this.
-    //  TODO Remove this function, we use LPP
-    ConstRefPPMonoidElem LM(ConstRefRingElem e){
-        return LPP(e);
-    }
-    
-    void getFactorAForTopReduction(BigInt& a, const BigInt& size) {
-        
-    }
-    
-    //TODO: implement also the check of lc(f) = a * lc(g) + b, with a <> 0 and b < lc(f) but how do we choose the a, we have some flexibilty
-    // here but what is the optimal solution ?
-    // for now i ll set b to be 0, but i will need to implement something that will start with setting value to b and trying to find the
-    // first (a,b) solution of the equation, this is the naive solution for now.
-    // existelementtopredu();
-    void getElementTopReduction(RingElem& result, BigInt& aFactor,  ConstRefRingElem& h, const std::vector<RingElem>& generators){
-//        cout << "Start of the getElementTopReduction functon" << endl;
-//        cout << "LM(h) is : " << LM(h) << endl;
-        for(auto &gen : generators) {
-//            cout << "LM(gen) is : " << LM(gen) << endl;
-//            cout << "isDivisible : " << IsDivisible(LM(h), LM(gen));
-            BigInt LCofH = ConvertTo<BigInt>(LC(h));
-            BigInt LCofGen = ConvertTo<BigInt>(LC(gen));
-            if(IsDivisible(LM(h), LM(gen)) && !IsZero( LCofH / LCofGen ) ) {
-                BigInt b = LCofH % LCofGen;
-                if(b < LCofH) {
-                    result = gen;
-                    aFactor = LCofH / LCofGen;
-                    return ;
-                }
-            }
-        }
-        throw(NoElementFoundException("Can't find any element that top reduces the given polynomial"));
-    }
-    
-
-    //Doesn't check if g can top reduces h, there is the getElementTopReduction that use this, this should stay an inner function to the class/file.
     RingElem topReduction(const BigInt& aCoef,ConstRefRingElem h, ConstRefRingElem g) {
-        // create a monomial which has the lmh/lmg and lc which is a and than multiply it by g and add it to h ;
-        RingElem aAndLmQuotient = monomial(owner(h), aCoef, LM(h)/LM(g));
+        RingElem aAndLmQuotient = monomial(owner(h), aCoef, LPP(h)/LPP(g));
         return h - aAndLmQuotient * g;
     }
     
-    RingElem NF(const RingElem f, const std::vector<RingElem>& generators) {
-        // TODO: remove const and use f directly.
-        RingElem h = f; // should i get rid of this copy? at least make f const
-        // TODO: test both cases where i just use the same vector, and when i copy the vector generators so i can filter it each time i try to look
-        // for a a reducer of h.
-        // maybe it is better to copy the generators, so i can remove some of the generators that are not top reduction element, and
-        // let filter the vector in every loop .
-            while(!IsZero(h)) {
-              // instead of creating a new function that just test if there is an element that is a top reduction for h in gen. which do
-              // the same thing as getElementTopReduction, we can throw an error in the function and catch it here to terminate the while loop.
-            // Suggestion : check a if it is zero that means no elem was top reduced
+    RingElem NF(RingElem f, const std::vector<RingElem>& generators) {
+            while(!IsZero(f)) {
                 BigInt a;
                 RingElem g;
-                // return bool and check if it is true and break in case it is ..
-//                getElementTopReduction(g, a, h, generators);
                 
                 auto isElementTopReduces =
-                    [&h, &a](ConstRefRingElem& element){
-                        BigInt LCofH = ConvertTo<BigInt>(LC(h));
+                    [&f, &a](ConstRefRingElem& element){
+                        BigInt LCofF = ConvertTo<BigInt>(LC(f));
                         BigInt LCofElem = ConvertTo<BigInt>(LC(element));
-                        
-                        // change LM with LPP.
-                        // if(!isDiv) -> false
-                        // if ( LCofElm > LCofH ) -> false (both cond of !isZero and the reminder of lcofh / lcofelem)
-                        // than calculate a and b. (use the quoRem function)
-                        if(IsDivisible(LM(h), LM(element)) && !IsZero(LCofH / LCofElem)) {
-                            // check if LCofElem is Bigger than LCofH instead of chekcing b < LCofH here. and return false
-                            BigInt b = LCofH % LCofElem ;
-                            if( b < LCofH) {
-                                a = LCofH / LCofElem;
-                                return true;
-                            }
-//                            else {
-//                                return false;
-//                            }
-                        }
-                        return false;
+                        // if ( LCofElm > LCofH ) -> false (both cond of !isZero and the reminder of lcofh / lcofelem is smaller than lcofF)
+                        if(!IsDivisible(LPP(f), LPP(element)))
+                            return false;
+                        if(LCofElem > LCofF)
+                            return false;
+                        a = LCofF / LCofElem;
+                        return true;
                 };
-//                cout << "NFL before find_if" << endl ;
+
                 const auto result = std::find_if(begin(generators), end(generators), isElementTopReduces);
-//                cout << "NFL after find_if" << endl ;
                 
                 if(result == std::end(generators)) {
-                    return h;
+                    return f;
                 }
                 g = *result;
-                
-//                if(result != std::end(generators)) {
-//                    g = *result;
-//                }
-//                else {
-//                    break;
-//                }
-//                cout << "NF:  h before reduction: " << h << endl ;
-                h = topReduction(a, h, g);
+                f = topReduction(a, f, g);
             }
-        return h;
+        return f;
     }
     
     
@@ -189,8 +109,8 @@ namespace CoCoA
     
     RingElem sPolynomialNew(ConstRefRingElem a, ConstRefRingElem b){
 
-        ConstRefPPMonoidElem lmA = LM(a);
-        ConstRefPPMonoidElem lmB = LM(b);
+        ConstRefPPMonoidElem lmA = LPP(a);
+        ConstRefPPMonoidElem lmB = LPP(b);
         
         PPMonoidElem termLcm = lcm(lmA, lmB);
         
@@ -211,7 +131,7 @@ namespace CoCoA
     }
     
     bool isSPolyUseless(ConstRefRingElem f, ConstRefRingElem g){
-        return (IsCoprime(LM(f), LM(g)) && IsCoprime(LC(f), LC(g)));
+        return (IsCoprime(LPP(f), LPP(g)) && IsCoprime(LC(f), LC(g)));
     }
     
     
@@ -272,8 +192,8 @@ namespace CoCoA
     
     RingElem gcdPolynomialNew(ConstRefRingElem a, ConstRefRingElem b){
         // bf tf f + bg tg g // tf = t/ lmf tg = t/lmg // b = gcd lcf, lcg // gf
-        ConstRefPPMonoidElem lma = LM(a);
-        ConstRefPPMonoidElem lmb = LM(b);
+        ConstRefPPMonoidElem lma = LPP(a);
+        ConstRefPPMonoidElem lmb = LPP(b);
         
         PPMonoidElem termLcm = lcm(lma, lmb);
         BigInt lcaValue =  ConvertTo<BigInt>(LC(a));
@@ -337,7 +257,7 @@ namespace CoCoA
             while (i < generators.size() && !found) {
 //                cout << "nRoverZZCore: fourth breakpoint i: " << i  << endl;
                 if(
-                   IsDivisible( // OF LM , LM
+                   IsDivisible( // OF LPP , LPP
                                // here i can check if the lc is divisible the other lc, and the same for the lpp
                                monomial(owner(poly), LC(reminderElem),LPP(reminderElem)),
                                monomial(owner(poly), LC(generators.at(i)),LPP(generators.at(i))))) {
