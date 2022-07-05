@@ -68,9 +68,10 @@ namespace CoCoA
     // Implement NF
     // First we need to check if it a global monomial order or a local monomial order.
     // create existTopReduction function.
-// create topReduction function.
+     // create topReduction function.
     
 // TODO change the implementation of this.
+    //  TODO Remove this function, we use LPP
     ConstRefPPMonoidElem LM(ConstRefRingElem e){
         return LPP(e);
     }
@@ -113,6 +114,7 @@ namespace CoCoA
     }
     
     RingElem NF(const RingElem f, const std::vector<RingElem>& generators) {
+        // TODO: remove const and use f directly.
         RingElem h = f; // should i get rid of this copy? at least make f const
         // TODO: test both cases where i just use the same vector, and when i copy the vector generators so i can filter it each time i try to look
         // for a a reducer of h.
@@ -128,32 +130,42 @@ namespace CoCoA
 //                getElementTopReduction(g, a, h, generators);
                 
                 auto isElementTopReduces =
-                [&h, &a](ConstRefRingElem& element){
-                    BigInt LCofH = ConvertTo<BigInt>(LC(h));
-                    BigInt LCofElem = ConvertTo<BigInt>(LC(element));
-                    
-                    if(IsDivisible(LM(h), LM(element)) && !IsZero(LCofH / LCofElem)) {
-                        BigInt b = LCofH % LCofElem ;
-                        if( b < LCofH) {
-                            a = LCofH / LCofElem;
-                            return true;
+                    [&h, &a](ConstRefRingElem& element){
+                        BigInt LCofH = ConvertTo<BigInt>(LC(h));
+                        BigInt LCofElem = ConvertTo<BigInt>(LC(element));
+                        
+                        // change LM with LPP.
+                        // if(!isDiv) -> false
+                        // if ( LCofElm > LCofH ) -> false (both cond of !isZero and the reminder of lcofh / lcofelem)
+                        // than calculate a and b. (use the quoRem function)
+                        if(IsDivisible(LM(h), LM(element)) && !IsZero(LCofH / LCofElem)) {
+                            // check if LCofElem is Bigger than LCofH instead of chekcing b < LCofH here. and return false
+                            BigInt b = LCofH % LCofElem ;
+                            if( b < LCofH) {
+                                a = LCofH / LCofElem;
+                                return true;
+                            }
+//                            else {
+//                                return false;
+//                            }
                         }
-                        else {
-                            return false;
-                        }
-                    }
-                    return false;
+                        return false;
                 };
 //                cout << "NFL before find_if" << endl ;
-                auto result = std::find_if(begin(generators), end(generators), isElementTopReduces);
+                const auto result = std::find_if(begin(generators), end(generators), isElementTopReduces);
 //                cout << "NFL after find_if" << endl ;
                 
-                if(result != std::end(generators)) {
-                    g = *result;
+                if(result == std::end(generators)) {
+                    return h;
                 }
-                else {
-                    break;
-                }
+                g = *result;
+                
+//                if(result != std::end(generators)) {
+//                    g = *result;
+//                }
+//                else {
+//                    break;
+//                }
 //                cout << "NF:  h before reduction: " << h << endl ;
                 h = topReduction(a, h, g);
             }
