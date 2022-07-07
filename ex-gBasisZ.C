@@ -70,13 +70,14 @@ namespace CoCoA
             bool usedGcd, usedS;
         public:
         SpecialPolysController(const RingElem f1, const RingElem f2);
+        // TODO: Check if it is used anymore.
         bool equals(SpecialPolysController obj) const{
-            return f == obj.getF() && g == obj.getG() && usedGcd == obj.getUsedGcd() && usedS == obj.getUsedS();
+            return usedGcd == obj.getUsedGcd() && usedS == obj.getUsedS() && f == obj.getF() && g == obj.getG();
         }
-        const RingElem getF() {
+        const RingElem& getF() {
             return f;
         }
-        const RingElem getG() {
+        const RingElem& getG() {
             return g;
         }
         bool getUsedGcd() {
@@ -107,9 +108,10 @@ namespace CoCoA
             }
             if(usedS && usedGcd) throw UselessSpecialPoly("gcd and s poly are reduced to zero.");
             RingElem resultGcd = gcd();
-            if( !usedS && (  (IsDivisible( LC(this -> f), LC(resultGcd) ) && IsDivisible( LC(this -> g), LC(resultGcd)))  || usedGcd )  ) {
+            // TODO: break the cond. to !usedS than if(!usedGcd) -> calcu. rgcd than the other part of the cond.
+            if( !usedS && ( usedGcd || (IsDivisible( LC(this -> f), LC(resultGcd) ) && IsDivisible( LC(this -> g), LC(resultGcd)))  )  ) {
                 usedS = true;
-                usedGcd = true;
+//                usedGcd = true;
 //                if( IsZero(s()) && !usedGcd) { // TODO: i don't know why at one point the usedS doesn't want to update to true, maybe i create a new instance each time
 //                    // anyways i added this to counter that for now.
 //                    usedGcd = true;
@@ -122,7 +124,7 @@ namespace CoCoA
                 return s();
             }
             usedGcd = true;
-            usedS= true;
+//            usedS= true;
 //            cout << "we used gcd usedGcd: " << usedGcd << ", usedS: " << usedS << endl;
 //            cout << "result of gcd is : " << resultGcd << endl;
             return resultGcd;
@@ -390,11 +392,12 @@ namespace CoCoA
     std::vector<RingElem> gBasisCoreV2( std::vector<RingElem>& generators) {
 //        cout<< "gBasisCoreV2: inside gBasisCoreV2" << endl;
         std::size_t length = generators.size();
+        // TODO: use a set or list instead of a vector. (plus justification.)
         std::vector<SpecialPolysController> polynomials;
         polynomials.reserve(length);
         
-        for(unsigned long i = 0; i < length - 1; i++) {
-            for(unsigned long j = i + 1; j < length; j++) {
+        for(std::size_t i = 0; i < length - 1; i++) {
+            for(std::size_t j = i + 1; j < length; j++) {
                 const RingElem fi = generators.at(i), fj = generators.at(j);
                 polynomials.push_back(SpecialPolysController(fi, fj));
             }
@@ -408,15 +411,20 @@ namespace CoCoA
 //            std::this_thread::sleep_for(std::chrono::seconds(5));
             cout << "************************" << endl;
 //            RingElem h = polynomials.back();
-            for(unsigned int i = 0; i < polynomials.size(); i++) {
+            // for (auto x: polynomials) instead of this.
+            for(std::size_t i = 0; i < polynomials.size(); i++) {
                 try{
                     h = polynomials[i].choose();
                 }catch(UselessSpecialPoly e) {
+                    // ConcurrentModificationEx.
                     // in case we checked if the spoly and gcd poly are useful and they aren't we should remove the pair and continue to the next pair.
                     // TODO: redundant code of erasing should i just keep this one and remove the isUsed method and the deleting code a put down before in the if condition.
+                    // TODO: an other loop with remove_if().instead of removing it here. 
                     polynomials.erase(polynomials.begin() + i);
+                    i--;
                     continue;
                 }
+                // TODO: make an other method that checks of the useless.
                 if(polynomials[i].isUsed()) {
 //                    cout << "poly size is before pop back: "  << polynomials.size() << endl ;
 //                    cout << "element erased f: " << polynomials[i].getF() << ", g: " << polynomials[i].getG() << endl;
@@ -430,6 +438,7 @@ namespace CoCoA
                 if(!IsZero(h)) {
 //                    cout<< " inside the condition is not zero" << endl;
     //                cout<< " polynom size before the new fill " << polynomials.size() <<endl;
+                    // TODO: comment the clear intr. and test.
                     polynomials.clear();
     //                cout << "polynom size after the clear" << polynomials.size() << endl ;
                     for(auto &g : generators) {
@@ -669,7 +678,7 @@ namespace CoCoA
 //      cout << "new gBoverZZ : " << endl;
 //
       const clock_t begin_time2 = clock();
-      std:: vector<RingElem> result2 = gBoverZZV2(gens);
+      std:: vector<RingElem> result2 = gBoverZZV2(v);
       std::cout << "****************time spent on gBoverZZ2 is: " <<  float( clock () - begin_time2 ) /  CLOCKS_PER_SEC << "*************" << endl;
       std::cout << "** size of the result list is : " << result2.size() << endl ;
 
@@ -679,7 +688,7 @@ namespace CoCoA
 //      }
 
       const clock_t begin_time3 = clock();
-      std:: vector<RingElem> result3 = gBoverZZ(gens);
+      std:: vector<RingElem> result3 = gBoverZZ(v);
       std::cout << "****************time spent on gBoverZZ is:  " <<  float( clock () - begin_time3 ) /  CLOCKS_PER_SEC << " ************* " << endl;
 //      cout << " the list after the old implementation of gBoverzz" << endl;
       std::cout << "** size of the result list is : " << result3.size() << endl ;
