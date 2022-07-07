@@ -399,36 +399,7 @@ namespace CoCoA
                 polynomials.push_back(SpecialPolysController(fi, fj));
             }
         }
-        // 2
         
-//        cout << "gBasisCoreV2: starting the first loop "<< endl;
-        // should i sort the polynomials list to prioritirize the gcds first before aplyaing spolynomial [Comment after theoreme 17]
-        // TODO: about the alocation for vector, i should specify the size first. and just use V[i] =  for example
-//        for (unsigned long i = 0; i < length - 1; i++) {
-//            for (unsigned long j = i + 1; j < length; j++) {
-//                // first we need to see if we can discard one.
-//                const RingElem fi = generators.at(i), fj = generators.at(j);
-//                polynomials.
-////                if(!isGcdPolyUseless(fi, fj)) {
-////                    if(!isSPolyUseless(fi, fj)) {
-////                        polynomials.push_back(std::make_pair(gcdPolynomial(fi, fj), sPolynomial(fi, fj)));
-////                    }
-////                    else {
-////                        polynomials.push_back(std::make_pair(gcdPolynomial(fi, fj), 0));
-////                    }
-////
-////                }
-////                else {
-////                    if(!isSPolyUseless(fi,fj)) {
-////                        polynomials.push_back(std::make_pair(0, sPolynomial(fi, fj)));
-////                    }
-////                }
-//            }
-//        }
-        
-//        cout << "gBasisCoreV2: starting the while loop" << endl;
-//        cout << "gBasisCoreV2: size of generators is  " << generators.size() << endl;
-        // 3
         RingElem h;
         while(!polynomials.empty()) {
 //            cout<<"polynomial size " << polynomials.size() << endl;
@@ -442,20 +413,16 @@ namespace CoCoA
                     h = polynomials[i].choose();
                 }catch(UselessSpecialPoly e) {
                     // in case we checked if the spoly and gcd poly are useful and they aren't we should remove the pair and continue to the next pair.
-                    // TODO: redundant code of erasing should i just keep this one and remove the isUsed method and the deleting code a put down in the if condition.
+                    // TODO: redundant code of erasing should i just keep this one and remove the isUsed method and the deleting code a put down before in the if condition.
                     polynomials.erase(polynomials.begin() + i);
                     continue;
                 }
-            
-    //            if(gcdPolynomial())
-                // TODO: Create a class that stores (that stores the gcd and the s polys and also stores a boolean on which one to choose ); instead of passing a pair.
                 if(polynomials[i].isUsed()) {
 //                    cout << "poly size is before pop back: "  << polynomials.size() << endl ;
 //                    cout << "element erased f: " << polynomials[i].getF() << ", g: " << polynomials[i].getG() << endl;
                     polynomials.erase(polynomials.begin() + i);
 //                    cout << "poly size is after pop back: "  << polynomials.size() << endl;
                 }
-                // by the while condition,
                 // 5
                 h = NF(h, generators);
 //                cout << "result of NF: " << h << endl ;
@@ -467,40 +434,14 @@ namespace CoCoA
     //                cout << "polynom size after the clear" << polynomials.size() << endl ;
                     for(auto &g : generators) {
                         polynomials.push_back(SpecialPolysController(h, g));
-    //                    if(!isGcdPolyUseless(h, g)) {
-    //                        cout << "is gdc poly not usless = " << gcdPolynomial(g, h) << endl;
-    //                        polynomials.push_back(gcdPolynomial(g, h)); TODO: uncomment or change
-
-    //                    }
-    //                    if(!isSPolyUseless(h, g)) {
-    //                        cout << "is spoly not useless = " << sPolynomial(g, h) << endl;
-    //                        polynomials.push_back(sPolynomial(g, h)); TODO: uncomment or change.
-    //                    }
                     }
-                    
-
                     generators.push_back(h);
-    //                std::sort(generators.begin(), generators.end(), [](auto gen1, auto gen2) {
-    //                    return abs(ConvertTo<BigInt>(LC(gen1))) > abs(ConvertTo<BigInt>(LC(gen2)));
-    //                });
-                    
-//                    cout << "polyn size after being inside the condition after the fill in : " << polynomials.size() << endl;
-
-                    // check if the generators list is already having a strong standard represntation.
-
+                    // TODO: check if the generators list is already having a strong standard represntation.
                 }
-                
     //            std::this_thread::sleep_for(std::chrono::seconds(5));
             }
-            
-           
         }
 //        cout << "gBasisCoreV2: end of the while loop" << endl;
-    // do the loop
-        // calculate NF
-        // if we found a reduction (h is diff than 0) then
-            // create a new list of p with spoly, gpoly of the new h and the element of the g.
-            // and add h to the g elements .
         return generators;
     }
     std::vector<RingElem> gBasisCore(const std::vector<RingElem>& generators) {
@@ -516,6 +457,7 @@ namespace CoCoA
 //        cout << "gBasisCore: first breakpoint " << endl;
         std::vector<RingElem> gb = generators;
         while (pairList.size() > 0) {
+            CheckForInterrupt("inside algo.");
             std::pair<unsigned long, unsigned long> pair = pairList.front(); // is this a copy by ref. or value ?
             // for now i ll take the first element than remove it but there is also an other way
             // I can just reverse the list and start from the last element , i should test both of this cases.
@@ -651,13 +593,16 @@ namespace CoCoA
       
       ring P = NewPolyRing(RingZZ(), symbols("x,y,z"));
       
-//      v.push_back(RingElem(P, "-x*y +y^2 +x +y"));
-//      v.push_back(RingElem(P, "-x^2 -x*y -y^2 -x-1"));
-//      v.push_back(RingElem(P, "-x^2 +x*y -y^2 +x +y"));
+      v.push_back(RingElem(P, "-x*y +y^2 +x +y"));
+      v.push_back(RingElem(P, "-x^2 -x*y -y^2 -x-1"));
+      v.push_back(RingElem(P, "-x^2 +x*y -y^2 +x +y"));
       
+      // ********* time spent on gBoverZZ2 is: 0.034247, time spent on gBoverZZ is: 2.60334
 //        v.push_back(RingElem(P, "x^3 - 2*x*y"));
 //        v.push_back(RingElem(P, "x^2 * y - 2*y^2 + x"));
 //        v.push_back(RingElem(P, "x*y-5*z"));
+      
+//      ********* time spent on gBoverZZ2 is: 0.001512, time spent on gBoverZZ is: 0.019121
 //        v.push_back(RingElem(P, "y - z - 2 * x^2 + 3 * x - 4"));
       
       //-2*y^2*z^2 + 15*y*z^2 - 5*z;
@@ -665,10 +610,10 @@ namespace CoCoA
       
       //[-2*x^2 -x*y +y^2 +2*x +2*y,  -x^2 +x*y -2*x +y -1,  x^2 -2*x*y +2*y^2 +2*x +2*y]
       
-      v.push_back(RingElem(P, "-2*x^2 -x*y +y^2 +2*x + 2*y"));
-      v.push_back(RingElem(P, "-x^2 +x*y -2*x +y -1"));
-      v.push_back(RingElem(P, "x^2 -2*x*y +2*y^2 + 2*x + 2*y"));
-      
+//      v.push_back(RingElem(P, "-2*x^2 -x*y +y^2 +2*x + 2*y"));
+//      v.push_back(RingElem(P, "-x^2 +x*y -2*x +y -1"));
+//      v.push_back(RingElem(P, "x^2 -2*x*y +2*y^2 + 2*x + 2*y"));
+      //      ********* time spent on gBoverZZ2 is: undertermined , time spent on gBoverZZ is: 0.337228
       
       //[8*x^2 -5*x*y +5*y^2 +x -6*y -7,  9*x^2 -9*x*y +2*x -6*y +3,  6*x*y +y^2 +7*x +7*y +8]
         
@@ -685,10 +630,6 @@ namespace CoCoA
 //
 //
 //
-////
-//
-//
-//
 //      const clock_t begin_time1 = clock();
 //      std:: vector<RingElem> resultminimum = minimalGBoverZZ(v);
 //      std::cout << "tine spent on  minimal gBoverZZ is: " <<  float( clock () - begin_time1 ) /  CLOCKS_PER_SEC;
@@ -699,15 +640,20 @@ namespace CoCoA
 //      }
 
       std::vector<RingElem> gens ;
-//        gens.push_back(RingElem(P, "-8"));
-      gens.push_back(RingElem(P, "x^2 + 1 "));
-      gens.push_back(RingElem(P, "x^4 + 7")); //"x^4 -9*x*y+2*x -6*y +3"
-//      gens.push_back(RingElem(P, "x^2 +7*x +7*x^9 +8")); //6*x*y +y^2 +7*x +7*y +8
 
+      gens.push_back(RingElem(P, "x^2 + 1 "));
+      gens.push_back(RingElem(P, "x^4 -9*x*y+2*x -6*y +3")); //"x^4 -9*x*y+2*x -6*y +3"
+      gens.push_back(RingElem(P, "x^2 +7*x +7*x^9 +8")); //6*x*y +y^2 +7*x +7*y +8
+      // ********* time spent on gBoverZZ2 is: 0.012921, time spent on gBoverZZ is:  0.979255
 
       RingElem h = RingElem(P, "-x^3");
 
-
+//      gens.push_back(RingElem(P, "x^2 + 1 "));
+//      gens.push_back(RingElem(P, "x^4 -9*x*y+2*x -6*y +3")); //"x^4 -9*x*y+2*x -6*y +3"
+//      gens.push_back(RingElem(P, "6*x*y +y^2 +7*x +7*y +8")); //6*x*y +y^2 +7*x +7*y +8
+//      ********* time spent on gBoverZZ2 is: 2.09737 , time spent on gBoverZZ more than 3 min and doesn't end.
+      
+      
 //      cout << "Test the function getElementTopReduction" << endl ;
 //      ConstRefRingElem getElementTopReduction(ConstRefRingElem h, const std::vector<ConstRefRingElem>& generators){
       RingElem result10;
@@ -723,25 +669,23 @@ namespace CoCoA
 //      cout << "new gBoverZZ : " << endl;
 //
       const clock_t begin_time2 = clock();
-      std:: vector<RingElem> result2 = gBoverZZV2(v);
-      std::cout << "tine spent on gBoverZZ2 is: " <<  float( clock () - begin_time2 ) /  CLOCKS_PER_SEC << endl;
+      std:: vector<RingElem> result2 = gBoverZZV2(gens);
+      std::cout << "****************time spent on gBoverZZ2 is: " <<  float( clock () - begin_time2 ) /  CLOCKS_PER_SEC << "*************" << endl;
+      std::cout << "** size of the result list is : " << result2.size() << endl ;
 
-
-      cout << " the list after the new implementation of gBoverZZV2  thing: " << endl;
-      for(RingElem& ele: result2) {
-          cout << ele << endl;
-      }
+//      cout << " the list after the new implementation of gBoverZZV2  thing: " << endl;
+//      for(RingElem& ele: result2) {
+//          cout << ele << endl;
+//      }
 
       const clock_t begin_time3 = clock();
-      std:: vector<RingElem> result3 = gBoverZZ(v);
-      std::cout << "tine spent on gBoverZZ2 is: " <<  float( clock () - begin_time3 ) /  CLOCKS_PER_SEC << endl;
-      cout << " the list after the old implementation of gBoverzz" << endl;
-      
-      for(RingElem& ele: result3) {
-          cout << ele << endl;
-      }
-
-
+      std:: vector<RingElem> result3 = gBoverZZ(gens);
+      std::cout << "****************time spent on gBoverZZ is:  " <<  float( clock () - begin_time3 ) /  CLOCKS_PER_SEC << " ************* " << endl;
+//      cout << " the list after the old implementation of gBoverzz" << endl;
+      std::cout << "** size of the result list is : " << result3.size() << endl ;
+//      for(RingElem& ele: result3) {
+//          cout << ele << endl;
+//      }
       
       cout << ShortDescription << endl;
     cout << boolalpha; // so that bools print out as true/false
