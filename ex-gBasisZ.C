@@ -70,20 +70,19 @@ namespace CoCoA
             bool usedGcd, usedS;
         public:
         SpecialPolysController(const RingElem f1, const RingElem f2);
-        // TODO: Check if it is used anymore.
-        bool equals(SpecialPolysController obj) const{
+        bool operator == (const SpecialPolysController& obj) const{
             return usedGcd == obj.getUsedGcd() && usedS == obj.getUsedS() && f == obj.getF() && g == obj.getG();
         }
-        const RingElem& getF() {
+        const RingElem& getF() const{
             return f;
         }
-        const RingElem& getG() {
+        const RingElem& getG() const{
             return g;
         }
-        bool getUsedGcd() {
+        bool getUsedGcd() const{
             return usedGcd;
         }
-        bool getUsedS() {
+        bool getUsedS() const{
             return usedS;
         }
         
@@ -419,7 +418,7 @@ namespace CoCoA
                     // ConcurrentModificationEx.
                     // in case we checked if the spoly and gcd poly are useful and they aren't we should remove the pair and continue to the next pair.
                     // TODO: redundant code of erasing should i just keep this one and remove the isUsed method and the deleting code a put down before in the if condition.
-                    // TODO: an other loop with remove_if().instead of removing it here. 
+                    // TODO: an other loop with remove_if().instead of removing it here.
                     polynomials.erase(polynomials.begin() + i);
                     i--;
                     continue;
