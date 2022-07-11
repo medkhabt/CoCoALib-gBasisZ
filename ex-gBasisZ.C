@@ -326,12 +326,8 @@ namespace CoCoA
     
     
     //TODO: change the bool argument to a flag.
-    //TODO: should ret a record instead of RingElem (maybe genetic in this case)
-    //TODO: Big N and R in the name.
-    // pass by ref poly.
-    // raw pointer..
     // check if generators contains  zero poly.
-    RemQuots nRoverZZCORE(RingElem poly, const std::vector<RingElem>& generators, bool withQuotients){
+    RemQuots NRoverZZCORE(const RingElem& poly, const std::vector<RingElem>& generators, bool withQuotients){
         std::vector<RingElem> quotients(generators.size());
 //        cout << "nRoverZZCore: first breakpoint" << endl;
         if(IsZero(poly)) {
@@ -494,7 +490,7 @@ namespace CoCoA
             }
 //            cout << "gBasisCore: fourth breakpoint " << endl;
             for(const RingElem& poly: polynomials) {
-                RingElem remainder = nRoverZZCORE(poly, gb, false).getRemainder();
+                RingElem remainder = NRoverZZCORE(poly, gb, false).getRemainder();
 //                cout << "gBasisCore: fifth breakpoint " << endl;
                 if(!IsZero(remainder)){
                     if(LC(remainder) < 0) {
