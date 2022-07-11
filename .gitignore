@@ -1,5 +1,6 @@
-# Ignore everything
+# Ignore everyting
+*
 
 # But not these files
 !.gitignore
-!ex-gBasis.C
+!ex-gBasisZ.C
