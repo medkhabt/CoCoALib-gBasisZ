@@ -106,21 +106,27 @@ namespace CoCoA
                 usedGcd = true;
             }
             if(usedS && usedGcd) throw UselessSpecialPoly("gcd and s poly are reduced to zero.");
-            RingElem resultGcd = gcd();
+            
             // TODO: break the cond. to !usedS than if(!usedGcd) -> calcu. rgcd than the other part of the cond.
-            if( !usedS && ( usedGcd || (IsDivisible( LC(this -> f), LC(resultGcd) ) && IsDivisible( LC(this -> g), LC(resultGcd)))  )  ) {
-                usedS = true;
-//                usedGcd = true;
-//                if( IsZero(s()) && !usedGcd) { // TODO: i don't know why at one point the usedS doesn't want to update to true, maybe i create a new instance each time
-//                    // anyways i added this to counter that for now.
-//                    usedGcd = true;
-//                    return resultGcd;
-//                }
-              
-//                cout << "we used s usedGcd: " << usedGcd << ", usedS: " << usedS << endl;
-//                cout << "result of s is : " << s() << endl;
-//                cout << "functions are: f: " << f << ", g: " << g << endl;
-                return s();
+//            Replace this condition into multiple conditions for optimization
+//            !usedS && ( usedGcd || (IsDivisible( LC(this -> f), LC(resultGcd) ) && IsDivisible( LC(this -> g), LC(resultGcd)))  )
+            RingElem resultGcd;
+            if( !usedS ) {
+                if(!usedGcd) {
+                    resultGcd = gcd();
+                    if((IsDivisible( LC(this -> f), LC(resultGcd) ) && IsDivisible( LC(this -> g), LC(resultGcd)))  ) {
+                        usedS = true;
+                        return s();
+                    }
+                }
+                else {
+                    usedS = true;
+                    return s();
+                }
+
+            }
+            else{
+                resultGcd = gcd();
             }
             usedGcd = true;
 //            usedS= true;
