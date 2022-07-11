@@ -439,8 +439,6 @@ namespace CoCoA
                 if(!IsZero(h)) {
 //                    cout<< " inside the condition is not zero" << endl;
     //                cout<< " polynom size before the new fill " << polynomials.size() <<endl;
-                    // TODO: comment the clear intr. and test.
-                    polynomials.clear();
     //                cout << "polynom size after the clear" << polynomials.size() << endl ;
                     for(auto &g : generators) {
                         polynomials.push_back(SpecialPolysController(h, g));
@@ -602,10 +600,13 @@ namespace CoCoA
       
       
       ring P = NewPolyRing(RingZZ(), symbols("x,y,z"));
+      v.push_back(RingElem(P, "2*x"));
+      v.push_back(RingElem(P, "3*y"));
+      v.push_back(RingElem(P, "5*z"));
       
-      v.push_back(RingElem(P, "-x*y +y^2 +x +y"));
-      v.push_back(RingElem(P, "-x^2 -x*y -y^2 -x-1"));
-      v.push_back(RingElem(P, "-x^2 +x*y -y^2 +x +y"));
+//      v.push_back(RingElem(P, "-x*y +y^2 +x +y"));
+//      v.push_back(RingElem(P, "-x^2 -x*y -y^2 -x-1"));
+//      v.push_back(RingElem(P, "-x^2 +x*y -y^2 +x +y"));
       
       // ********* time spent on gBoverZZ2 is: 0.034247, time spent on gBoverZZ is: 2.60334
 //        v.push_back(RingElem(P, "x^3 - 2*x*y"));
@@ -651,16 +652,16 @@ namespace CoCoA
 
       std::vector<RingElem> gens ;
 
-      gens.push_back(RingElem(P, "x^2 + 1 "));
-      gens.push_back(RingElem(P, "x^4 -9*x*y+2*x -6*y +3")); //"x^4 -9*x*y+2*x -6*y +3"
-      gens.push_back(RingElem(P, "x^2 +7*x +7*x^9 +8")); //6*x*y +y^2 +7*x +7*y +8
+//      gens.push_back(RingElem(P, "x^2 + 1 "));
+//      gens.push_back(RingElem(P, "x^4 -9*x*y+2*x -6*y +3")); //"x^4 -9*x*y+2*x -6*y +3"
+//      gens.push_back(RingElem(P, "x^2 +7*x +7*x^9 +8")); //6*x*y +y^2 +7*x +7*y +8
       // ********* time spent on gBoverZZ2 is: 0.012921, time spent on gBoverZZ is:  0.979255
 
       RingElem h = RingElem(P, "-x^3");
 
-//      gens.push_back(RingElem(P, "x^2 + 1 "));
-//      gens.push_back(RingElem(P, "x^4 -9*x*y+2*x -6*y +3")); //"x^4 -9*x*y+2*x -6*y +3"
-//      gens.push_back(RingElem(P, "6*x*y +y^2 +7*x +7*y +8")); //6*x*y +y^2 +7*x +7*y +8
+      gens.push_back(RingElem(P, "x^2 + 1 "));
+      gens.push_back(RingElem(P, "x^4 -9*x*y+2*x -6*y +3")); //"x^4 -9*x*y+2*x -6*y +3"
+      gens.push_back(RingElem(P, "6*x*y +y^2 +7*x +7*y +8")); //6*x*y +y^2 +7*x +7*y +8
 //      ********* time spent on gBoverZZ2 is: 2.09737 , time spent on gBoverZZ more than 3 min and doesn't end.
       
       
@@ -683,19 +684,19 @@ namespace CoCoA
       std::cout << "****************time spent on gBoverZZ2 is: " <<  float( clock () - begin_time2 ) /  CLOCKS_PER_SEC << "*************" << endl;
       std::cout << "** size of the result list is : " << result2.size() << endl ;
 
-//      cout << " the list after the new implementation of gBoverZZV2  thing: " << endl;
-//      for(RingElem& ele: result2) {
-//          cout << ele << endl;
-//      }
+      cout << " the list after the new implementation of gBoverZZV2  thing: " << endl;
+      for(RingElem& ele: result2) {
+          cout << ele << endl;
+      }
 
       const clock_t begin_time3 = clock();
       std:: vector<RingElem> result3 = gBoverZZ(v);
       std::cout << "****************time spent on gBoverZZ is:  " <<  float( clock () - begin_time3 ) /  CLOCKS_PER_SEC << " ************* " << endl;
-//      cout << " the list after the old implementation of gBoverzz" << endl;
+      cout << " the list after the old implementation of gBoverzz" << endl;
       std::cout << "** size of the result list is : " << result3.size() << endl ;
-//      for(RingElem& ele: result3) {
-//          cout << ele << endl;
-//      }
+      for(RingElem& ele: result3) {
+          cout << ele << endl;
+      }
       
       cout << ShortDescription << endl;
     cout << boolalpha; // so that bools print out as true/false
