@@ -88,16 +88,8 @@ namespace CoCoA
         
         // return type is bool if there is something to return it says true, if both of the gcd and s are already used it means there is nothing to choose.
         bool isUsed() {
-            return usedGcd && usedS;
-        }
-        RingElem choose() {
-//            std::cout << "inside the choose method" << endl;
-//            cout << "initial values: usedGcd: " << usedGcd << ", usedS: " << usedS << endl;
-            
-//            cout << "after useless check: usedGcd: " << usedGcd << ", usedS: " << usedS << endl;
-            std::ostringstream oss;
-            oss << "this object is already used! f: " << f << ", g: " << g;
-            if(usedS && usedGcd) throw std::invalid_argument(oss.str()); // TODO: Throw an exception.
+            // TODO: I am not sure if this is a proper. Because i am changing the state of the object even tho the method says (isUsed) which means more like a check.
+            // worst case, add comment explaining that, and why i did it (doing the check in the choose method make things tricky when using choose. )
             if(isSPolyUseless(f,g)) {
                 usedS = true;
             }
@@ -105,9 +97,19 @@ namespace CoCoA
             if(isGcdPolyUseless(f,g)) {
                 usedGcd = true;
             }
-            if(usedS && usedGcd) throw UselessSpecialPoly("gcd and s poly are reduced to zero.");
+            return usedGcd && usedS;
+        }
+        RingElem choose() {
+//            std::cout << "inside the choose method" << endl;
+//            cout << "initial values: usedGcd: " << usedGcd << ", usedS: " << usedS << endl;
             
-            // TODO: break the cond. to !usedS than if(!usedGcd) -> calcu. rgcd than the other part of the cond.
+//            cout << "after useless check: usedGcd: " << usedGcd << ", usedS: " << usedS << endl;
+//            std::ostringstream oss;
+//            oss << "this object is already used! f: " << f << ", g: " << g;
+//            if(usedS && usedGcd) throw std::invalid_argument(oss.str()); // TODO: Throw an exception.
+//
+//            if(usedS && usedGcd) throw UselessSpecialPoly("gcd and s poly are reduced to zero.");
+            
 //            Replace this condition into multiple conditions for optimization
 //            !usedS && ( usedGcd || (IsDivisible( LC(this -> f), LC(resultGcd) ) && IsDivisible( LC(this -> g), LC(resultGcd)))  )
             RingElem resultGcd;
@@ -406,40 +408,18 @@ namespace CoCoA
         
         RingElem h;
         while(!polynomials.empty()) {
-//            cout<<"polynomial size " << polynomials.size() << endl;
-            // 4
-            CheckForInterrupt("inside algo.");
+            CheckForInterrupt("gBasisCoreV2 while loop");
 //            std::this_thread::sleep_for(std::chrono::seconds(5));
             cout << "************************" << endl;
-//            RingElem h = polynomials.back();
             // for (auto x: polynomials) instead of this.
             for(std::size_t i = 0; i < polynomials.size(); i++) {
-                try{
+//                try{
+                    if(polynomials[i].isUsed()){
+                        continue;
+                    }
                     h = polynomials[i].choose();
-                }catch(UselessSpecialPoly e) {
-                    // ConcurrentModificationEx.
-                    // in case we checked if the spoly and gcd poly are useful and they aren't we should remove the pair and continue to the next pair.
-                    // TODO: redundant code of erasing should i just keep this one and remove the isUsed method and the deleting code a put down before in the if condition.
-                    // TODO: an other loop with remove_if().instead of removing it here.
-                    polynomials.erase(polynomials.begin() + i);
-                    i--;
-                    continue;
-                }
-                // TODO: make an other method that checks of the useless.
-                if(polynomials[i].isUsed()) {
-//                    cout << "poly size is before pop back: "  << polynomials.size() << endl ;
-//                    cout << "element erased f: " << polynomials[i].getF() << ", g: " << polynomials[i].getG() << endl;
-                    polynomials.erase(polynomials.begin() + i);
-//                    cout << "poly size is after pop back: "  << polynomials.size() << endl;
-                }
-                // 5
                 h = NF(h, generators);
-//                cout << "result of NF: " << h << endl ;
-                // 6
                 if(!IsZero(h)) {
-//                    cout<< " inside the condition is not zero" << endl;
-    //                cout<< " polynom size before the new fill " << polynomials.size() <<endl;
-    //                cout << "polynom size after the clear" << polynomials.size() << endl ;
                     for(auto &g : generators) {
                         polynomials.push_back(SpecialPolysController(h, g));
                     }
@@ -448,8 +428,9 @@ namespace CoCoA
                 }
     //            std::this_thread::sleep_for(std::chrono::seconds(5));
             }
+            // remove the elements
+                polynomials.erase(std::remove_if(polynomials.begin(), polynomials.end(), [](auto& ele) {return ele.isUsed();}));
         }
-//        cout << "gBasisCoreV2: end of the while loop" << endl;
         return generators;
     }
     std::vector<RingElem> gBasisCore(const std::vector<RingElem>& generators) {
