@@ -62,7 +62,6 @@ namespace CoCoA
 
     RemQuots::RemQuots(ConstRefRingElem r) :remainder(r){}
     
-    //TODO: in the choose method, when the flags for gcd and s are down remove the object from the array
     class SpecialPolysController {
         private:
             RingElem f;
@@ -87,6 +86,7 @@ namespace CoCoA
         }
         
         // return type is bool if there is something to return it says true, if both of the gcd and s are already used it means there is nothing to choose.
+        // throws because of isSPolyUseless and isGcdPolyUseless.
         bool isUsed() {
             // TODO: I am not sure if this is a proper. Because i am changing the state of the object even tho the method says (isUsed) which means more like a check.
             // worst case, add comment explaining that, and why i did it (doing the check in the choose method make things tricky when using choose. )
@@ -100,16 +100,6 @@ namespace CoCoA
             return usedGcd && usedS;
         }
         RingElem choose() {
-//            std::cout << "inside the choose method" << endl;
-//            cout << "initial values: usedGcd: " << usedGcd << ", usedS: " << usedS << endl;
-            
-//            cout << "after useless check: usedGcd: " << usedGcd << ", usedS: " << usedS << endl;
-//            std::ostringstream oss;
-//            oss << "this object is already used! f: " << f << ", g: " << g;
-//            if(usedS && usedGcd) throw std::invalid_argument(oss.str()); // TODO: Throw an exception.
-//
-//            if(usedS && usedGcd) throw UselessSpecialPoly("gcd and s poly are reduced to zero.");
-            
 //            Replace this condition into multiple conditions for optimization
 //            !usedS && ( usedGcd || (IsDivisible( LC(this -> f), LC(resultGcd) ) && IsDivisible( LC(this -> g), LC(resultGcd)))  )
             RingElem resultGcd;
@@ -223,11 +213,13 @@ namespace CoCoA
 
     }
     
-    
+    // throws if ring of f is not the same as the ring of g.
     bool isGcdPolyUseless(ConstRefRingElem f,ConstRefRingElem g) {
         return (IsDivisible(LC(g), LC(f)));
     }
     
+    // throws if ring of f is not the same as ring of g
+    // throws if f or g is zero.
     bool isSPolyUseless(ConstRefRingElem f, ConstRefRingElem g){
         return (IsCoprime(LPP(f), LPP(g)) && IsCoprime(LC(f), LC(g)));
     }
@@ -250,7 +242,7 @@ namespace CoCoA
 //        RingElemAlias result = ;
         return LPP(a);
     }
-    
+    // TODO: use lpp directly instead of Lt.
     RingElem gcdPolynomial(ConstRefRingElem a, ConstRefRingElem b){
         ConstRefPPMonoidElem lta = LT(a);
         ConstRefPPMonoidElem ltb = LT(b);
@@ -395,7 +387,8 @@ namespace CoCoA
     std::vector<RingElem> gBasisCoreV2( std::vector<RingElem>& generators) {
 //        cout<< "gBasisCoreV2: inside gBasisCoreV2" << endl;
         std::size_t length = generators.size();
-        // TODO: use a set or list instead of a vector. (plus justification.)
+        // TODO: use a set or list instead of a vector. (plus justification.) //
+        // I can't change the elements in the set when traversing them. I don't know how to "contour" that.
         std::vector<SpecialPolysController> polynomials;
         polynomials.reserve(length);
         
@@ -567,7 +560,21 @@ namespace CoCoA
         std::vector<RingElem> gb = gBasisCore(v);
         return cleanListMZZ(gb);
     }
-    
+    // BigInt or Long ?
+    const vector<long> generateNPrimes(int n) {
+        vector<long> nPrimes;
+        int currentPrime = 0;
+        for(long i = 0; i < n; ++i) {
+            cout << "Current Prime: " << currentPrime <<endl;
+            currentPrime = NextPrime(currentPrime);
+            cout << "Next Prime: " << currentPrime << endl;
+            nPrimes.push_back(currentPrime);
+        }
+        return nPrimes;
+    }
+    const vector<RingElem> generateTestsBasedOnPrimeDegree(int n) {
+        
+    }
     
   void program()
   {
@@ -679,6 +686,10 @@ namespace CoCoA
           cout << ele << endl;
       }
       
+      cout << "prime numbers found" << endl;
+      for(auto& el: generateNPrimes(110)) {
+          cout << el << endl;
+      }
       cout << ShortDescription << endl;
     cout << boolalpha; // so that bools print out as true/false
 
