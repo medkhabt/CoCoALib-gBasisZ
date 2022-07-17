@@ -3,6 +3,8 @@
 // You are free to use any part of this example in your own programs.
 
 #include "CoCoA/library.H"
+#include <chrono>
+#include <thread>
 
 using namespace std;
 
@@ -33,7 +35,9 @@ namespace CoCoA
     
     
     RingElem gcdPolynomial(ConstRefRingElem a, ConstRefRingElem b);
+    RingElem gcdPolynomialNew(ConstRefRingElem a, ConstRefRingElem b);
     RingElem sPolynomial(ConstRefRingElem a, ConstRefRingElem b);
+    RingElem sPolynomialNew(ConstRefRingElem a, ConstRefRingElem b);
     bool isSPolyUseless(ConstRefRingElem f, ConstRefRingElem g);
     bool isGcdPolyUseless(ConstRefRingElem f, ConstRefRingElem g);
     //TODO:
@@ -62,7 +66,6 @@ namespace CoCoA
 
     RemQuots::RemQuots(ConstRefRingElem r) :remainder(r){}
     
-    //TODO: in the choose method, when the flags for gcd and s are down remove the object from the array
     class SpecialPolysController {
         private:
             RingElem f;
@@ -87,6 +90,7 @@ namespace CoCoA
         }
         
         // return type is bool if there is something to return it says true, if both of the gcd and s are already used it means there is nothing to choose.
+        // throws because of isSPolyUseless and isGcdPolyUseless.
         bool isUsed() {
             // TODO: I am not sure if this is a proper. Because i am changing the state of the object even tho the method says (isUsed) which means more like a check.
             // worst case, add comment explaining that, and why i did it (doing the check in the choose method make things tricky when using choose. )
@@ -100,16 +104,6 @@ namespace CoCoA
             return usedGcd && usedS;
         }
         RingElem choose() {
-//            std::cout << "inside the choose method" << endl;
-//            cout << "initial values: usedGcd: " << usedGcd << ", usedS: " << usedS << endl;
-            
-//            cout << "after useless check: usedGcd: " << usedGcd << ", usedS: " << usedS << endl;
-//            std::ostringstream oss;
-//            oss << "this object is already used! f: " << f << ", g: " << g;
-//            if(usedS && usedGcd) throw std::invalid_argument(oss.str()); // TODO: Throw an exception.
-//
-//            if(usedS && usedGcd) throw UselessSpecialPoly("gcd and s poly are reduced to zero.");
-            
 //            Replace this condition into multiple conditions for optimization
 //            !usedS && ( usedGcd || (IsDivisible( LC(this -> f), LC(resultGcd) ) && IsDivisible( LC(this -> g), LC(resultGcd)))  )
             RingElem resultGcd;
@@ -118,16 +112,19 @@ namespace CoCoA
                     resultGcd = gcd();
                     if((IsDivisible( LC(this -> f), LC(resultGcd) ) && IsDivisible( LC(this -> g), LC(resultGcd)))  ) {
                         usedS = true;
+//                        cout << "1result s poly : " << s() << "for (f, g) :(" << f << ", " << g << ")"<< endl;
                         return s();
                     }
                 }
                 else {
                     usedS = true;
+//                    cout << "2result s poly : " << s()<< endl;
                     return s();
                 }
 
             }
             else{
+//                cout << "result gcd poly : " << gcd()<< endl;
                 resultGcd = gcd();
             }
             usedGcd = true;
@@ -140,10 +137,11 @@ namespace CoCoA
 //            }
         }
         const RingElem gcd() const{
-            return gcdPolynomial(this->f,this->g);
+            return gcdPolynomialNew(this->f,this->g);
         }
+        //TODO: test the new spolyn fct .
         const RingElem s() const{
-            return sPolynomial(this->f, this->g);
+            return sPolynomialNew(this->f, this->g);
         }
         
     };
@@ -213,21 +211,23 @@ namespace CoCoA
         PPMonoidElem termLcm = lcm(lmA, lmB);
         
         
-        BigInt lcaValue =  ConvertTo<BigInt>(LC(a));
-        BigInt lcbValue = ConvertTo<BigInt>(LC(b));
+//        BigInt lcaValue =  ConvertTo<BigInt>(LC(a));
+//        BigInt lcbValue = ConvertTo<BigInt>(LC(b));
         
         
-        BigInt numerator = lcm(lcaValue, lcbValue);
+        RingElem numerator = lcm(LC(a), LC(b));
         // af tf f - ag tg g //
-        return monomial(owner(a), (numerator/lcbValue), (termLcm/lmA)) * a - monomial(owner(b), (numerator/lcaValue), (termLcm/lmB)) * b;
+        return monomial(owner(a), (numerator/LC(b)), (termLcm/lmA)) * a - monomial(owner(b), (numerator/LC(a)), (termLcm/lmB)) * b;
 
     }
     
-    
+    // throws if ring of f is not the same as the ring of g.
     bool isGcdPolyUseless(ConstRefRingElem f,ConstRefRingElem g) {
         return (IsDivisible(LC(g), LC(f)));
     }
     
+    // throws if ring of f is not the same as ring of g
+    // throws if f or g is zero.
     bool isSPolyUseless(ConstRefRingElem f, ConstRefRingElem g){
         return (IsCoprime(LPP(f), LPP(g)) && IsCoprime(LC(f), LC(g)));
     }
@@ -250,7 +250,7 @@ namespace CoCoA
 //        RingElemAlias result = ;
         return LPP(a);
     }
-    
+    // TODO: use lpp directly instead of Lt.
     RingElem gcdPolynomial(ConstRefRingElem a, ConstRefRingElem b){
         ConstRefPPMonoidElem lta = LT(a);
         ConstRefPPMonoidElem ltb = LT(b);
@@ -395,7 +395,8 @@ namespace CoCoA
     std::vector<RingElem> gBasisCoreV2( std::vector<RingElem>& generators) {
 //        cout<< "gBasisCoreV2: inside gBasisCoreV2" << endl;
         std::size_t length = generators.size();
-        // TODO: use a set or list instead of a vector. (plus justification.)
+        // TODO: use a set or list instead of a vector. (plus justification.) //
+        // I can't change the elements in the set when traversing them. I don't know how to "contour" that.
         std::vector<SpecialPolysController> polynomials;
         polynomials.reserve(length);
         
@@ -410,26 +411,48 @@ namespace CoCoA
         while(!polynomials.empty()) {
             CheckForInterrupt("gBasisCoreV2 while loop");
 //            std::this_thread::sleep_for(std::chrono::seconds(5));
-            cout << "************************" << endl;
+//            cout << "************************" << endl;
             // for (auto x: polynomials) instead of this.
             for(std::size_t i = 0; i < polynomials.size(); i++) {
+//                cout << "**** New iteration: " << endl;
 //                try{
+//                cout << "ep: 1" << endl;
                     if(polynomials[i].isUsed()){
                         continue;
                     }
+//                cout << "ep: 2" << endl;
                     h = polynomials[i].choose();
+//                cout << "Choosed poly h from p: " << h << endl;
+//                cout << "ep: 3" << endl;
                 h = NF(h, generators);
+                
+//                cout << " reducing the h to: " << h << endl;
+//                cout << "ep: 4 " << h <<  endl;
                 if(!IsZero(h)) {
+//                    cout << "ep: 5" << endl;
                     for(auto &g : generators) {
+//                        cout << "ep: 6" << endl;
                         polynomials.push_back(SpecialPolysController(h, g));
+//                        cout << "ep: 7" << endl;
                     }
                     generators.push_back(h);
                     // TODO: check if the generators list is already having a strong standard represntation.
                 }
     //            std::this_thread::sleep_for(std::chrono::seconds(5));
             }
+//            cout << "are the polys used: " << endl;
+            for(auto& poly: polynomials) {
+//                cout << poly.isUsed() << endl;
+                
+            }
+//            cout << "ep: 8" << endl;
             // remove the elements
-                polynomials.erase(std::remove_if(polynomials.begin(), polynomials.end(), [](auto& ele) {return ele.isUsed();}));
+            std::vector<CoCoA::SpecialPolysController>::iterator iterator1 =std::remove_if(polynomials.begin(), polynomials.end(), [](auto& ele) {return ele.isUsed();});
+            if( iterator1 < polynomials.end()) {
+                polynomials.erase(iterator1);
+            }
+                
+//            cout << "ep: 9" << endl;
         }
         return generators;
     }
@@ -567,7 +590,38 @@ namespace CoCoA
         std::vector<RingElem> gb = gBasisCore(v);
         return cleanListMZZ(gb);
     }
-    
+    // BigInt or Long ?
+    const vector<long> generateNPrimes(int n) {
+        vector<long> nPrimes;
+        int currentPrime = 0;
+        for(long i = 0; i < n; ++i) {
+//            cout << "Current Prime: " << currentPrime <<endl;
+            currentPrime = NextPrime(currentPrime);
+            cout << "Next Prime: " << currentPrime << endl;
+            nPrimes.push_back(currentPrime);
+        }
+        return nPrimes;
+    }
+    vector<RingElem> generateTestsBasedOnPrimeDegree(int n) {
+        vector<long> nPrimes = generateNPrimes(n);
+        vector<symbol> symbolsPrime = SymbolRange("x", 0, n-1);
+        cout << "size of symbolsPrime are : " << symbolsPrime.size() << endl;
+        PPMonoid PPM = NewPPMonoidEv(symbolsPrime, lex);
+        long p = 1;
+        ring P = NewPolyRing(RingZZ(), PPM);
+        
+        for(auto& prime: nPrimes) {
+            p *= prime;
+        }
+         
+        vector<RingElem> polysBasedOnPrimes;
+        for(long i = 0; i < symbolsPrime.size(); ++i) {
+            polysBasedOnPrimes.push_back(monomial(P, (p/nPrimes[i]), indet(PPM, i)));
+        }
+        
+        return polysBasedOnPrimes;
+        
+    }
     
   void program()
   {
@@ -581,9 +635,9 @@ namespace CoCoA
       
       
       ring P = NewPolyRing(RingZZ(), symbols("x,y,z"));
-      v.push_back(RingElem(P, "2*x"));
-      v.push_back(RingElem(P, "3*y"));
-      v.push_back(RingElem(P, "5*z"));
+//      v.push_back(RingElem(P, "2*x"));
+//      v.push_back(RingElem(P, "3*y"));
+//      v.push_back(RingElem(P, "5*z"));
       
 //      v.push_back(RingElem(P, "-x*y +y^2 +x +y"));
 //      v.push_back(RingElem(P, "-x^2 -x*y -y^2 -x-1"));
@@ -609,9 +663,9 @@ namespace CoCoA
       
       //[8*x^2 -5*x*y +5*y^2 +x -6*y -7,  9*x^2 -9*x*y +2*x -6*y +3,  6*x*y +y^2 +7*x +7*y +8]
         
-//      v.push_back(RingElem(P, "8*x^2 -5*x*y +5*y^2 +x -6*y -7"));
-//      v.push_back(RingElem(P, "9*x^2 -9*x*y +2*x -6*y +3"));
-//      v.push_back(RingElem(P, "6*x*y +y^2 +7*x +7*y +8"));
+      v.push_back(RingElem(P, "8*x^2 -5*x*y +5*y^2 +x -6*y -7"));
+      v.push_back(RingElem(P, "9*x^2 -9*x*y +2*x -6*y +3"));
+      v.push_back(RingElem(P, "6*x*y +y^2 +7*x +7*y +8"));
       
 //      cout << "finished creating the vector" << endl;
 
@@ -640,10 +694,19 @@ namespace CoCoA
 
       RingElem h = RingElem(P, "-x^3");
 
-      gens.push_back(RingElem(P, "x^2 + 1 "));
-      gens.push_back(RingElem(P, "x^4 -9*x*y+2*x -6*y +3")); //"x^4 -9*x*y+2*x -6*y +3"
-      gens.push_back(RingElem(P, "6*x*y +y^2 +7*x +7*y +8")); //6*x*y +y^2 +7*x +7*y +8
+//      gens.push_back(RingElem(P, "x^2 + 1 "));
+//      gens.push_back(RingElem(P, "x^4 -9*x*y+2*x -6*y +3")); //"x^4 -9*x*y+2*x -6*y +3"
+//      gens.push_back(RingElem(P, "6*x*y +y^2 +7*x +7*y +8")); //6*x*y +y^2 +7*x +7*y +8
 //      ********* time spent on gBoverZZ2 is: 2.09737 , time spent on gBoverZZ more than 3 min and doesn't end.
+      
+//      gens.push_back(RingElem(P, "15 * x"));
+//      gens.push_back(RingElem(P, "10 * y")); //"x^4 -9*x*y+2*x -6*y +3"
+//      gens.push_back(RingElem(P, "6 * z"));
+      
+      gens.push_back(RingElem(P, "2*x + 3*y + 4*z - 5"));
+      gens.push_back(RingElem(P, "3*x + 4*y + 5*z -2"));
+
+      
       
       
 //      cout << "Test the function getElementTopReduction" << endl ;
@@ -655,29 +718,52 @@ namespace CoCoA
 
 //      cout << "the top reduction is : " << topReduction(a, h, result10) << endl;
 
-      cout << "the nf of h in the gens vector is " << NF(h, gens) << endl;
-
+//      cout << "the nf of h in the gens vector is " << NF(h, gens) << endl;
+      
+//      cout << "is Divisible ? " << IsDivisible(LPP(RingElem(P, "10 * x * y")), LPP(RingElem(P, "15 * x"))) << endl;
 
 //      cout << "new gBoverZZ : " << endl;
+      std::vector<RingElem> primVector = generateTestsBasedOnPrimeDegree(4);
+//      cout << "the list of the prime vectors generated from an n" << endl;
+////      for(auto& ele: primVector) {
+//          cout << ele << endl;
+//      }
+      
 //
-      const clock_t begin_time2 = clock();
-      std:: vector<RingElem> result2 = gBoverZZV2(v);
-      std::cout << "****************time spent on gBoverZZ2 is: " <<  float( clock () - begin_time2 ) /  CLOCKS_PER_SEC << "*************" << endl;
-      std::cout << "** size of the result list is : " << result2.size() << endl ;
-
-      cout << " the list after the new implementation of gBoverZZV2  thing: " << endl;
-      for(RingElem& ele: result2) {
-          cout << ele << endl;
-      }
-
+      
+      
       const clock_t begin_time3 = clock();
-      std:: vector<RingElem> result3 = gBoverZZ(v);
-      std::cout << "****************time spent on gBoverZZ is:  " <<  float( clock () - begin_time3 ) /  CLOCKS_PER_SEC << " ************* " << endl;
+//      std:: vector<RingElem> result3 = gBoverZZ(primVector);
+      std:: vector<RingElem> result3 = gBoverZZV2(primVector);
+//      std::cout << "****************time spent on gBoverZZ is:  " <<  float( clock () - begin_time3 ) /  CLOCKS_PER_SEC << " ************* " << endl;
+      std::cout << "****************time spent on gBoverZZ2 is: " <<  float( clock () - begin_time3 ) /  CLOCKS_PER_SEC << "*************" << endl;
       cout << " the list after the old implementation of gBoverzz" << endl;
-      std::cout << "** size of the result list is : " << result3.size() << endl ;
-      for(RingElem& ele: result3) {
-          cout << ele << endl;
-      }
+      
+//
+//      const clock_t begin_time2 = clock();
+//      std:: vector<RingElem> result2 = gBoverZZV2(primVector);
+//      std::cout << "****************time spent on gBoverZZ2 is: " <<  float( clock () - begin_time2 ) /  CLOCKS_PER_SEC << "*************" << endl;
+//      std::cout << "** size of the result list is : " << result2.size() << endl ;
+
+//      cout << " the list after the new implementation of gBoverZZV2  thing: " << endl;
+//      for(RingElem& ele: result2) {
+//          cout << ele << endl;
+//      }
+
+     
+//      std::cout << "** size of the result list is : " << result3.size() << endl ;
+//      for(RingElem& ele: result3) {
+//          cout << ele << endl;
+//      }
+
+//      cout << "prime numbers found" << endl;
+//      for(auto& el: generateNPrimes(110)) {
+//          cout << el << endl;
+//      }
+//
+      
+      cout << "spoly : " << sPolynomialNew(RingElem(P, "15*x"), RingElem(P, "10*y"));
+      
       
       cout << ShortDescription << endl;
     cout << boolalpha; // so that bools print out as true/false
