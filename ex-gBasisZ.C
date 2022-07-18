@@ -3,8 +3,9 @@
 // You are free to use any part of this example in your own programs.
 
 #include "CoCoA/library.H"
-#include <chrono>
-#include <thread>
+#include <chrono> // TODO: remove this in the end.
+#include <thread> // TODO: remove this in the end.
+#include <cstdlib>
 
 using namespace std;
 
@@ -622,6 +623,41 @@ namespace CoCoA
         return polysBasedOnPrimes;
         
     }
+    /**
+     Let U be an n-by-n unimodular matrix (e.g. see the CoCoALib function
+     RandomUnimodularMat).  Compute U*M; this is an n-by-n matrix over ZZ.
+     Convert the rows of U*M into linear forms: effectively you multiply
+     U*M on the right by the column matrix with entries x[1], x[2], ... x[n].
+     [obviously you must be in the polynomial ring ZZ[x[1],..,x[n]];
+      we also want ordering where x[1] > x[2] > ... > x[n]; this is the default]
+     */
+    const vector<RingElem> generateMatrixBasedOnUpTriangleMatrixAndUniModularMatrix(size_t size) {
+        vector<symbol> symbolsPrime = SymbolRange("x", 0, size-1);
+        PPMonoid PPM = NewPPMonoidEv(symbolsPrime, lex);
+        ring P1 = NewPolyRing(RingZZ(), PPM);
+        vector<RingElem> indeterminants;
+        for(int i=0; i<size; ++i) {
+            indeterminants.push_back(monomial(P1, 1, indet(PPM, i)));
+        }
+        matrix m(NewDenseMat(P1, size, size));
+        for(int i=0; i<size; ++i){
+            for(int j=i ; j<size; ++j) {
+                SetEntry(m, i, j, rand()%100);
+            }
+        }
+        matrix u(RandomUnimodularMat(P1, size));
+        cout << "m: " << m << endl;
+  //      cout << "col matrix for inde. " << ColMat(indeterminants) << endl;
+        matrix result((u * m) * ColMat(indeterminants));
+  //      cout << "linear eq. : " << result << endl;
+  //      cout << "get an element of the matrix: " << result(1,0) << endl;
+        
+        vector<RingElem> linearEq;
+        for(int i = 0; i<size; ++i){
+            linearEq.push_back(result(i,0));
+        }
+        return linearEq;
+    }
     
   void program()
   {
@@ -762,8 +798,32 @@ namespace CoCoA
 //      }
 //
       
-      cout << "spoly : " << sPolynomialNew(RingElem(P, "15*x"), RingElem(P, "10*y"));
+//      cout << "spoly : " << sPolynomialNew(RingElem(P, "15*x"), RingElem(P, "10*y"));
+//      size_t size = 3;
+//      vector<symbol> symbolsPrime = SymbolRange("x", 0, size-1);
+//      PPMonoid PPM = NewPPMonoidEv(symbolsPrime, lex);
+//      ring P1 = NewPolyRing(RingZZ(), PPM);
+//      vector<RingElem> indeterminants;
+//      for(int i=0; i<size; ++i) {
+//          indeterminants.push_back(monomial(P1, 1, indet(PPM, i)));
+//      }
+//      matrix m(NewDenseMat(P1, size, size));
+//      for(int i=0; i<size; ++i){
+//          for(int j=i ; j<size; ++j) {
+//              SetEntry(m, i, j, rand()%100);
+//          }
+//      }
+//      matrix u(RandomUnimodularMat(P1, size));
+//      cout << "m: " << m << endl;
+////      cout << "col matrix for inde. " << ColMat(indeterminants) << endl;
+//      matrix result((u * m) * ColMat(indeterminants));
+////      cout << "linear eq. : " << result << endl;
+////      cout << "get an element of the matrix: " << result(1,0) << endl;
       
+      vector<RingElem> linearEq = generateMatrixBasedOnUpTriangleMatrixAndUniModularMatrix(3);
+      cout << "result of gBoverZZ: " << ColMat(gBoverZZ(linearEq)) << endl;
+      
+     
       
       cout << ShortDescription << endl;
     cout << boolalpha; // so that bools print out as true/false
