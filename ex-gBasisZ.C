@@ -152,6 +152,15 @@ namespace CoCoA
         usedGcd = false;
     }
     
+    vector<RingElem> transformToAllPositiveLcPolys(vector<RingElem>& polys) {
+        for(auto& poly: polys) {
+            if(LC(poly) < 0)
+                poly = poly * -1;
+                
+        }
+        return polys;
+    }
+    
     RingElem topReduction(const BigInt& aCoef,ConstRefRingElem h, ConstRefRingElem g) {
         RingElem aAndLmQuotient = monomial(owner(h), aCoef, LPP(h)/LPP(g));
         return h - aAndLmQuotient * g;
@@ -823,7 +832,14 @@ namespace CoCoA
       vector<RingElem> linearEq = generateMatrixBasedOnUpTriangleMatrixAndUniModularMatrix(3);
       cout << "result of gBoverZZ: " << ColMat(gBoverZZ(linearEq)) << endl;
       
-     
+     // test transform polys that are negative.
+      std::vector<RingElem> vWithNegativLcs;
+      vWithNegativLcs.push_back(RingElem(P, "-2*x + 3*y + 4*z - 5"));
+      vWithNegativLcs.push_back(RingElem(P, "3*x + 4*y + 5*z -2"));
+      vWithNegativLcs.push_back(RingElem(P, "-8*x - 3*z "));
+      
+      cout << "Transforming the negarive vector: " << endl ;
+      cout << ColMat(transformToAllPositiveLcPolys(vWithNegativLcs)) << endl;
       
       cout << ShortDescription << endl;
     cout << boolalpha; // so that bools print out as true/false
