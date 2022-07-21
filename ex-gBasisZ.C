@@ -152,6 +152,15 @@ namespace CoCoA
         usedGcd = false;
     }
     
+    vector<RingElem> transformToAllPositiveLcPolys(vector<RingElem>& polys) {
+        for(auto& poly: polys) {
+            if(LC(poly) < 0)
+                poly *= -1;
+                
+        }
+        return polys;
+    }
+    
     RingElem topReduction(const BigInt& aCoef,ConstRefRingElem h, ConstRefRingElem g) {
         RingElem aAndLmQuotient = monomial(owner(h), aCoef, LPP(h)/LPP(g));
         return h - aAndLmQuotient * g;
@@ -159,10 +168,11 @@ namespace CoCoA
     
     RingElem NF(RingElem f, const std::vector<RingElem>& generators) {
             while(!IsZero(f)) {
+//                std::this_thread::sleep_for(std::chrono::seconds(5));
                 CheckForInterrupt("interrupt NF");
                 BigInt a;
                 RingElem g;
-                
+//                cout << " f start of the iteration : " << f << endl;
                 auto isElementTopReduces =
                     [&f, &a](ConstRefRingElem& element){
                         BigInt LCofF = ConvertTo<BigInt>(LC(f));
@@ -170,12 +180,12 @@ namespace CoCoA
                         // if ( LCofElm > LCofH ) -> false (both cond of !isZero and the reminder of lcofh / lcofelem is smaller than lcofF)
                         if(!IsDivisible(LPP(f), LPP(element)))
                             return false;
-                        if(abs(LCofElem) > abs(LCofF))
+                        if((LCofElem) > (LCofF))
                             return false;
                         a = LCofF / LCofElem;
                         return true;
                 };
-
+                
                 const auto result = std::find_if(begin(generators), end(generators), isElementTopReduces);
                 
                 if(result == std::end(generators)) {
@@ -401,6 +411,8 @@ namespace CoCoA
         std::vector<SpecialPolysController> polynomials;
         polynomials.reserve(length);
         
+        transformToAllPositiveLcPolys(generators);
+        
         for(std::size_t i = 0; i < length - 1; i++) {
             for(std::size_t j = i + 1; j < length; j++) {
                 const RingElem fi = generators.at(i), fj = generators.at(j);
@@ -423,13 +435,19 @@ namespace CoCoA
                     }
 //                cout << "ep: 2" << endl;
                     h = polynomials[i].choose();
+                if(!IsZero(h) && LC(h) < 0)
+                    h *= -1;
 //                cout << "Choosed poly h from p: " << h << endl;
 //                cout << "ep: 3" << endl;
+            
                 h = NF(h, generators);
                 
 //                cout << " reducing the h to: " << h << endl;
 //                cout << "ep: 4 " << h <<  endl;
                 if(!IsZero(h)) {
+                    // TODO: Remove the comment after the test
+                    if(LC(h) < 0)
+                        h *= -1;
 //                    cout << "ep: 5" << endl;
                     for(auto &g : generators) {
 //                        cout << "ep: 6" << endl;
@@ -759,7 +777,7 @@ namespace CoCoA
 //      cout << "is Divisible ? " << IsDivisible(LPP(RingElem(P, "10 * x * y")), LPP(RingElem(P, "15 * x"))) << endl;
 
 //      cout << "new gBoverZZ : " << endl;
-      std::vector<RingElem> primVector = generateTestsBasedOnPrimeDegree(4);
+      std::vector<RingElem> primVector = generateTestsBasedOnPrimeDegree(6  );
 //      cout << "the list of the prime vectors generated from an n" << endl;
 ////      for(auto& ele: primVector) {
 //          cout << ele << endl;
@@ -788,9 +806,9 @@ namespace CoCoA
 
      
 //      std::cout << "** size of the result list is : " << result3.size() << endl ;
-//      for(RingElem& ele: result3) {
-//          cout << ele << endl;
-//      }
+      for(RingElem& ele: result3) {
+          cout << ele << endl;
+      }
 
 //      cout << "prime numbers found" << endl;
 //      for(auto& el: generateNPrimes(110)) {
@@ -820,10 +838,19 @@ namespace CoCoA
 ////      cout << "linear eq. : " << result << endl;
 ////      cout << "get an element of the matrix: " << result(1,0) << endl;
       
-      vector<RingElem> linearEq = generateMatrixBasedOnUpTriangleMatrixAndUniModularMatrix(3);
-      cout << "result of gBoverZZ: " << ColMat(gBoverZZ(linearEq)) << endl;
-      
-     
+//      vector<RingElem> linearEq = generateMatrixBasedOnUpTriangleMatrixAndUniModularMatrix(3);
+//      vector<RingElem> resultMatrix = gBoverZZV2(linearEq);
+//      cout << "result of gBoverZZ: " << ColMat(gBoverZZV2(linearEq)) << endl;
+//      cout << "size of the result is : " << resultMatrix.size() << endl;
+//
+//     // test transform polys that are negative.
+//      std::vector<RingElem> vWithNegativLcs;
+//      vWithNegativLcs.push_back(RingElem(P, "-2*x + 3*y + 4*z - 5"));
+//      vWithNegativLcs.push_back(RingElem(P, "3*x + 4*y + 5*z -2"));
+//      vWithNegativLcs.push_back(RingElem(P, "-8*x - 3*z "));
+//
+//      cout << "Transforming the negarive vector: " << endl ;
+//      cout << ColMat(transformToAllPositiveLcPolys(vWithNegativLcs)) << endl;
       
       cout << ShortDescription << endl;
     cout << boolalpha; // so that bools print out as true/false
