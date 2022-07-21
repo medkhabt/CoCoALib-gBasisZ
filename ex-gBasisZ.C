@@ -228,7 +228,7 @@ namespace CoCoA
         
         RingElem numerator = lcm(LC(a), LC(b));
         // af tf f - ag tg g //
-        return monomial(owner(a), (numerator/LC(b)), (termLcm/lmA)) * a - monomial(owner(b), (numerator/LC(a)), (termLcm/lmB)) * b;
+        return monomial(owner(a), (numerator/LC(a)), (termLcm/lmA)) * a - monomial(owner(b), (numerator/LC(b)), (termLcm/lmB)) * b;
 
     }
     
@@ -787,10 +787,10 @@ namespace CoCoA
       
       
       const clock_t begin_time3 = clock();
-//      std:: vector<RingElem> result3 = gBoverZZ(primVector);
-      std:: vector<RingElem> result3 = gBoverZZV2(primVector);
-//      std::cout << "****************time spent on gBoverZZ is:  " <<  float( clock () - begin_time3 ) /  CLOCKS_PER_SEC << " ************* " << endl;
-      std::cout << "****************time spent on gBoverZZ2 is: " <<  float( clock () - begin_time3 ) /  CLOCKS_PER_SEC << "*************" << endl;
+      std:: vector<RingElem> result3 = gBoverZZ(primVector);
+//      std:: vector<RingElem> result3 = gBoverZZV2(primVector);
+      std::cout << "****************time spent on gBoverZZ is:  " <<  float( clock () - begin_time3 ) /  CLOCKS_PER_SEC << " ************* " << endl;
+//      std::cout << "****************time spent on gBoverZZ2 is: " <<  float( clock () - begin_time3 ) /  CLOCKS_PER_SEC << "*************" << endl;
       cout << " the list after the old implementation of gBoverzz" << endl;
       
 //
