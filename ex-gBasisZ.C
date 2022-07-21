@@ -216,10 +216,13 @@ namespace CoCoA
     
     RingElem sPolynomialNew(ConstRefRingElem a, ConstRefRingElem b){
 
-        ConstRefPPMonoidElem lmA = LPP(a);
-        ConstRefPPMonoidElem lmB = LPP(b);
+        ConstRefPPMonoidElem lppA = LPP(a);
+//        ConstRefRingElem lppA = monomial(owner(a), 1, LPP(a));
+        ConstRefPPMonoidElem lppB = LPP(b);
+//        ConstRefRingElem lppB = monomial(owner(b), 1, LPP(b));
         
-        PPMonoidElem termLcm = lcm(lmA, lmB);
+        PPMonoidElem termLcm = lcm(lppA, lppB);
+//        ConstRefRingElem termLcm = lcm(lppA, lppB);
         
         
 //        BigInt lcaValue =  ConvertTo<BigInt>(LC(a));
@@ -228,7 +231,12 @@ namespace CoCoA
         
         RingElem numerator = lcm(LC(a), LC(b));
         // af tf f - ag tg g //
-        return monomial(owner(a), (numerator/LC(a)), (termLcm/lmA)) * a - monomial(owner(b), (numerator/LC(b)), (termLcm/lmB)) * b;
+        // Tried all 3 combinaisions with no improvement in time. 
+//        return monomial(owner(a), (numerator/LC(b)), (termLcm/lppA)) * a - monomial(owner(b), (numerator/LC(a)), (termLcm/lppB)) * b;
+        return (numerator/LC(b)) * monomial(owner(a), 1, (termLcm/lppA)) * a - (numerator/LC(a)) * monomial(owner(b), 1, (termLcm/lppB)) * b ;
+//        return (numerator/LC(b)) * (termLcm/lppA) * a - (numerator/LC(a)) * (termLcm/lppB) * b ;
+        
+
 
     }
     
